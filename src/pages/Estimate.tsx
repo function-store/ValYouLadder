@@ -1,16 +1,11 @@
 import { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkles, TrendingUp, Users, Calendar } from "lucide-react";
-import {
-  PROJECT_TYPES,
-  CLIENT_TYPES,
-  PROJECT_LENGTHS,
-  EXPERTISE_LEVELS,
-  SKILLS,
-} from "@/lib/projectTypes";
+import { Sparkles } from "lucide-react";
+import { SKILLS, COUNTRIES } from "@/lib/projectTypes";
+import EstimateForm from "@/components/estimate/EstimateForm";
+import EstimateResults from "@/components/estimate/EstimateResults";
+import { SimilarProject } from "@/components/estimate/SimilarProjectsList";
 
 const Estimate = () => {
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
@@ -18,11 +13,14 @@ const Estimate = () => {
   const [clientType, setClientType] = useState("");
   const [projectLength, setProjectLength] = useState("");
   const [expertiseLevel, setExpertiseLevel] = useState("");
+  const [clientCountry, setClientCountry] = useState("");
+  const [projectLocation, setProjectLocation] = useState("");
   const [estimate, setEstimate] = useState<{
     low: number;
     mid: number;
     high: number;
     sampleSize: number;
+    similarProjects: SimilarProject[];
   } | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
 
@@ -32,55 +30,125 @@ const Estimate = () => {
     );
   };
 
+  const generateSimilarProjects = (
+    count: number,
+    baseRate: number,
+    skills: string[]
+  ): SimilarProject[] => {
+    const clientTypes = [
+      "global-brand",
+      "big-brand",
+      "small-brand",
+      "institution",
+      "festival",
+      "musician",
+      "agency",
+    ];
+    const projectTypes = [
+      "commission",
+      "collaboration",
+      "technical",
+      "consultation",
+    ];
+    const expertiseLevels = ["junior", "mid", "senior", "expert"];
+    const locations = COUNTRIES.filter((c) => c !== "Other").slice(0, 10);
+
+    return Array.from({ length: count }, (_, i) => ({
+      id: `project-${i + 1}`,
+      projectType: projectTypes[Math.floor(Math.random() * projectTypes.length)],
+      clientType: clientTypes[Math.floor(Math.random() * clientTypes.length)],
+      projectLength: projectLength || "medium",
+      location: locations[Math.floor(Math.random() * locations.length)],
+      skills: skills
+        .sort(() => Math.random() - 0.5)
+        .slice(0, Math.floor(Math.random() * 3) + 2),
+      expertiseLevel:
+        expertiseLevels[Math.floor(Math.random() * expertiseLevels.length)],
+      budget: Math.round(baseRate * (0.5 + Math.random() * 1.5)),
+      yearCompleted: Math.random() > 0.5 ? 2024 : 2023,
+    }));
+  };
+
   const calculateEstimate = async () => {
     setIsCalculating(true);
-    
+
     // Simulate AI processing
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
     // Mock calculation based on inputs
-    const baseRate = {
-      "global-brand": 25000,
-      "big-brand": 15000,
-      "small-brand": 5000,
-      institution: 12000,
-      festival: 4000,
-      musician: 8000,
-      exhibition: 10000,
-      agency: 12000,
-      private: 3000,
-      other: 5000,
-    }[clientType] || 5000;
+    const baseRate =
+      {
+        "global-brand": 25000,
+        "big-brand": 15000,
+        "small-brand": 5000,
+        institution: 12000,
+        festival: 4000,
+        musician: 8000,
+        exhibition: 10000,
+        agency: 12000,
+        private: 3000,
+        other: 5000,
+      }[clientType] || 5000;
 
-    const lengthMultiplier = {
-      "one-off": 0.3,
-      short: 0.5,
-      medium: 1,
-      long: 2,
-      performance: 0.4,
-      tour: 3,
-      "installation-temp": 0.8,
-      "installation-perm": 2.5,
-    }[projectLength] || 1;
+    const lengthMultiplier =
+      {
+        "one-off": 0.3,
+        short: 0.5,
+        medium: 1,
+        long: 2,
+        performance: 0.4,
+        tour: 3,
+        "installation-temp": 0.8,
+        "installation-perm": 2.5,
+      }[projectLength] || 1;
 
-    const expertiseMultiplier = {
-      junior: 0.6,
-      mid: 1,
-      senior: 1.5,
-      expert: 2.2,
-    }[expertiseLevel] || 1;
+    const expertiseMultiplier =
+      {
+        junior: 0.6,
+        mid: 1,
+        senior: 1.5,
+        expert: 2.2,
+      }[expertiseLevel] || 1;
 
-    const skillsMultiplier = 1 + (selectedSkills.length * 0.05);
+    const skillsMultiplier = 1 + selectedSkills.length * 0.05;
 
-    const midEstimate = Math.round(baseRate * lengthMultiplier * expertiseMultiplier * skillsMultiplier);
+    // Location-based adjustments
+    const highCostCountries = [
+      "United States",
+      "United Kingdom",
+      "Switzerland",
+      "Norway",
+      "Denmark",
+      "Sweden",
+      "Australia",
+    ];
+    const locationMultiplier = highCostCountries.includes(projectLocation)
+      ? 1.2
+      : 1;
+
+    const midEstimate = Math.round(
+      baseRate *
+        lengthMultiplier *
+        expertiseMultiplier *
+        skillsMultiplier *
+        locationMultiplier
+    );
+
+    const sampleSize = Math.floor(Math.random() * 30) + 10;
+    const similarProjects = generateSimilarProjects(
+      sampleSize,
+      midEstimate,
+      selectedSkills.length > 0 ? selectedSkills : SKILLS.slice(0, 5)
+    );
 
     setEstimate({
       low: Math.round(midEstimate * 0.7),
       mid: midEstimate,
       high: Math.round(midEstimate * 1.4),
-      sampleSize: Math.floor(Math.random() * 30) + 10,
+      sampleSize,
+      similarProjects,
     });
-    
+
     setIsCalculating(false);
   };
 
@@ -92,7 +160,12 @@ const Estimate = () => {
     }).format(amount);
   };
 
-  const canCalculate = projectType && clientType && projectLength && expertiseLevel && selectedSkills.length > 0;
+  const canCalculate =
+    projectType &&
+    clientType &&
+    projectLength &&
+    expertiseLevel &&
+    selectedSkills.length > 0;
 
   return (
     <Layout>
@@ -108,102 +181,30 @@ const Estimate = () => {
               Get a Rate <span className="text-primary">Estimate</span>
             </h1>
             <p className="text-muted-foreground max-w-lg mx-auto">
-              Input your project details and our AI will analyze the community database to suggest a competitive rate.
+              Input your project details and our AI will analyze the community
+              database to suggest a competitive rate.
             </p>
           </div>
 
           <div className="grid lg:grid-cols-2 gap-8">
             {/* Input Form */}
             <div className="space-y-6">
-              <div className="node-card rounded-xl p-6 border border-border space-y-6">
-                <h2 className="font-mono font-semibold text-lg border-b border-border pb-3">Project Details</h2>
-
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Type of Project</Label>
-                    <Select value={projectType} onValueChange={setProjectType}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PROJECT_TYPES.map((type) => (
-                          <SelectItem key={type.value} value={type.value}>
-                            {type.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Type of Client</Label>
-                    <Select value={clientType} onValueChange={setClientType}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select client type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {CLIENT_TYPES.map((type) => (
-                          <SelectItem key={type.value} value={type.value}>
-                            {type.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Project Length</Label>
-                    <Select value={projectLength} onValueChange={setProjectLength}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select length" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PROJECT_LENGTHS.map((length) => (
-                          <SelectItem key={length.value} value={length.value}>
-                            {length.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Your Expertise Level</Label>
-                    <Select value={expertiseLevel} onValueChange={setExpertiseLevel}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select level" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {EXPERTISE_LEVELS.map((level) => (
-                          <SelectItem key={level.value} value={level.value}>
-                            {level.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-
-              <div className="node-card rounded-xl p-6 border border-border space-y-4">
-                <h2 className="font-mono font-semibold text-lg border-b border-border pb-3">Skills Required</h2>
-                <div className="flex flex-wrap gap-2">
-                  {SKILLS.map((skill) => (
-                    <button
-                      key={skill}
-                      type="button"
-                      onClick={() => toggleSkill(skill)}
-                      className={`px-3 py-1.5 rounded-md text-sm font-mono transition-all ${
-                        selectedSkills.includes(skill)
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                      }`}
-                    >
-                      {skill}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <EstimateForm
+                projectType={projectType}
+                setProjectType={setProjectType}
+                clientType={clientType}
+                setClientType={setClientType}
+                projectLength={projectLength}
+                setProjectLength={setProjectLength}
+                expertiseLevel={expertiseLevel}
+                setExpertiseLevel={setExpertiseLevel}
+                clientCountry={clientCountry}
+                setClientCountry={setClientCountry}
+                projectLocation={projectLocation}
+                setProjectLocation={setProjectLocation}
+                selectedSkills={selectedSkills}
+                toggleSkill={toggleSkill}
+              />
 
               <Button
                 variant="glow"
@@ -218,68 +219,7 @@ const Estimate = () => {
             </div>
 
             {/* Results */}
-            <div className="space-y-6">
-              {estimate ? (
-                <>
-                  <div className="node-card rounded-xl p-6 border border-primary/30 space-y-6">
-                    <div className="flex items-center gap-2 text-primary">
-                      <TrendingUp className="h-5 w-5" />
-                      <h2 className="font-mono font-semibold text-lg">Estimated Rate Range</h2>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div className="space-y-1">
-                        <div className="text-sm text-muted-foreground">Low</div>
-                        <div className="text-xl font-mono font-bold">{formatCurrency(estimate.low)}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-sm text-primary">Suggested</div>
-                        <div className="text-3xl font-mono font-bold text-primary glow-text">{formatCurrency(estimate.mid)}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-sm text-muted-foreground">High</div>
-                        <div className="text-xl font-mono font-bold">{formatCurrency(estimate.high)}</div>
-                      </div>
-                    </div>
-
-                    <div className="h-2 rounded-full bg-secondary overflow-hidden">
-                      <div 
-                        className="h-full bg-gradient-to-r from-muted via-primary to-muted"
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="node-card rounded-xl p-6 border border-border space-y-4">
-                    <h3 className="font-mono font-semibold">Analysis Based On</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="flex items-center gap-3 text-sm">
-                        <Users className="h-4 w-4 text-primary" />
-                        <span>{estimate.sampleSize} similar projects</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-sm">
-                        <Calendar className="h-4 w-4 text-primary" />
-                        <span>2023-2024 data</span>
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground pt-2 border-t border-border">
-                      This estimate is based on anonymized community data and should be used as a starting point. 
-                      Actual rates may vary based on specific project requirements, client relationship, and market conditions.
-                    </p>
-                  </div>
-                </>
-              ) : (
-                <div className="node-card rounded-xl p-12 border border-border text-center">
-                  <div className="h-16 w-16 rounded-full bg-secondary flex items-center justify-center mx-auto mb-4">
-                    <Sparkles className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <h3 className="font-mono font-semibold mb-2">Ready to Estimate</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Fill in your project details and click "Get AI Estimate" to receive a rate suggestion based on community data.
-                  </p>
-                </div>
-              )}
-            </div>
+            <EstimateResults estimate={estimate} formatCurrency={formatCurrency} />
           </div>
         </div>
       </div>
