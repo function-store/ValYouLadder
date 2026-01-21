@@ -18,7 +18,7 @@ import {
   SKILLS,
   COUNTRIES,
 } from "@/lib/projectTypes";
-import { validateDescription, sanitizeDescription } from "@/lib/sanitizeSubmission";
+import { validateDescription, sanitizeDescriptionWithAI } from "@/lib/sanitizeSubmission";
 import VerificationStep from "@/components/submit/VerificationStep";
 
 const formSchema = z.object({
@@ -90,21 +90,38 @@ const SubmitProject = () => {
 
     setIsSubmitting(true);
     
-    // Sanitize description before submission
-    const sanitizedData = {
-      ...data,
-      description: sanitizeDescription(data.description),
-    };
-    
-    console.log("Form submitted:", sanitizedData);
-    // TODO: Submit to database
-    
-    toast({
-      title: "Project submitted!",
-      description: "Thank you for contributing to the community.",
-    });
-    setIsSubmitting(false);
-    setIsSubmitted(true);
+    try {
+      // AI-powered sanitization of description
+      const { sanitized, redactions } = await sanitizeDescriptionWithAI(data.description);
+      
+      const sanitizedData = {
+        ...data,
+        description: sanitized,
+      };
+      
+      console.log("Form submitted:", sanitizedData);
+      if (redactions.length > 0) {
+        console.log("Redacted items:", redactions);
+      }
+      // TODO: Submit to database
+      
+      toast({
+        title: "Project submitted!",
+        description: redactions.length > 0 
+          ? `Thank you! ${redactions.length} identifying item(s) were automatically redacted.`
+          : "Thank you for contributing to the community.",
+      });
+      setIsSubmitted(true);
+    } catch (error) {
+      console.error("Submission error:", error);
+      toast({
+        title: "Submission failed",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isSubmitted) {
