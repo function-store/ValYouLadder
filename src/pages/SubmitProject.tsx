@@ -8,9 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Send, CheckCircle2 } from "lucide-react";
+import { Send, CheckCircle2, AlertTriangle } from "lucide-react";
 import {
   PROJECT_TYPES,
   CLIENT_TYPES,
@@ -19,6 +18,8 @@ import {
   SKILLS,
   COUNTRIES,
 } from "@/lib/projectTypes";
+import { validateDescription, sanitizeDescription } from "@/lib/sanitizeSubmission";
+import VerificationStep from "@/components/submit/VerificationStep";
 
 const formSchema = z.object({
   projectType: z.string().min(1, "Project type is required"),
@@ -41,6 +42,9 @@ const SubmitProject = () => {
   const { toast } = useToast();
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [descriptionWarnings, setDescriptionWarnings] = useState<string[]>([]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -68,13 +72,38 @@ const SubmitProject = () => {
     form.setValue("skills", updated);
   };
 
+  const handleDescriptionChange = (value: string) => {
+    form.setValue("description", value);
+    const warnings = validateDescription(value);
+    setDescriptionWarnings(warnings);
+  };
+
   const onSubmit = async (data: FormData) => {
-    console.log("Form submitted:", data);
+    if (!isVerified) {
+      toast({
+        title: "Verification required",
+        description: "Please complete the verification step first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    // Sanitize description before submission
+    const sanitizedData = {
+      ...data,
+      description: sanitizeDescription(data.description),
+    };
+    
+    console.log("Form submitted:", sanitizedData);
     // TODO: Submit to database
+    
     toast({
       title: "Project submitted!",
       description: "Thank you for contributing to the community.",
     });
+    setIsSubmitting(false);
     setIsSubmitted(true);
   };
 
@@ -320,17 +349,47 @@ const SubmitProject = () => {
               <h2 className="font-mono font-semibold text-lg border-b border-border pb-3">Additional Notes</h2>
               <Textarea
                 placeholder="Any additional context about the project (optional)"
-                {...form.register("description")}
+                onChange={(e) => handleDescriptionChange(e.target.value)}
                 className="min-h-[100px]"
               />
               <p className="text-xs text-muted-foreground">
                 Please don't include any identifying information about the client or yourself.
+                Any detected names, URLs, or identifiers will be automatically redacted.
               </p>
+              {descriptionWarnings.length > 0 && (
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                  <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-yellow-500 space-y-1">
+                    {descriptionWarnings.map((warning, i) => (
+                      <p key={i}>{warning}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            <Button type="submit" variant="glow" size="xl" className="w-full gap-2">
+            {/* Verification Step */}
+            <VerificationStep
+              onVerified={() => setIsVerified(true)}
+              isVerifying={isSubmitting}
+            />
+
+            {isVerified && (
+              <div className="flex items-center gap-2 text-sm text-primary">
+                <CheckCircle2 className="h-4 w-4" />
+                Verification complete
+              </div>
+            )}
+
+            <Button 
+              type="submit" 
+              variant="glow" 
+              size="xl" 
+              className="w-full gap-2"
+              disabled={!isVerified || isSubmitting}
+            >
               <Send className="h-5 w-5" />
-              Submit Anonymously
+              {isSubmitting ? "Submitting..." : "Submit Anonymously"}
             </Button>
           </form>
         </div>

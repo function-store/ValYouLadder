@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, ArrowUpDown, Filter, DollarSign } from "lucide-react";
+import { Search, ArrowUpDown, Filter, DollarSign, Eye } from "lucide-react";
 import {
   PROJECT_TYPES,
   CLIENT_TYPES,
@@ -12,6 +12,8 @@ import {
   EXPERTISE_LEVELS,
   ProjectSubmission,
 } from "@/lib/projectTypes";
+import ProjectDetailDialog from "@/components/database/ProjectDetailDialog";
+import { sanitizeDescription } from "@/lib/sanitizeSubmission";
 
 // Mock data for demonstration
 const MOCK_DATA: ProjectSubmission[] = [
@@ -98,6 +100,18 @@ const Database = () => {
   const [filterClientType, setFilterClientType] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"yourBudget" | "totalBudget" | "yearCompleted">("yourBudget");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [selectedProject, setSelectedProject] = useState<ProjectSubmission | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const handleViewProject = (project: ProjectSubmission) => {
+    // Sanitize description before showing
+    const sanitizedProject = {
+      ...project,
+      description: sanitizeDescription(project.description),
+    };
+    setSelectedProject(sanitizedProject);
+    setDialogOpen(true);
+  };
 
   const filteredData = useMemo(() => {
     let data = [...MOCK_DATA];
@@ -230,7 +244,11 @@ const Database = () => {
           {/* Project Cards */}
           <div className="grid gap-4">
             {filteredData.map((project) => (
-              <div key={project.id} className="node-card rounded-xl p-6 border border-border hover:border-primary/30 transition-colors">
+              <div 
+                key={project.id} 
+                className="node-card rounded-xl p-6 border border-border hover:border-primary/30 transition-colors cursor-pointer group"
+                onClick={() => handleViewProject(project)}
+              >
                 <div className="flex flex-col lg:flex-row lg:items-start gap-4">
                   {/* Left side - Budget highlight */}
                   <div className="flex lg:flex-col items-center gap-4 lg:gap-2 lg:min-w-[120px] lg:text-center">
@@ -255,15 +273,20 @@ const Database = () => {
                       <Badge variant="outline" className="font-mono">
                         {getLabel(project.projectLength, PROJECT_LENGTHS)}
                       </Badge>
-                      <span className="text-sm text-muted-foreground ml-auto">{project.yearCompleted}</span>
+                      <span className="text-sm text-muted-foreground ml-auto flex items-center gap-2">
+                        {project.yearCompleted}
+                        <Eye className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </span>
                     </div>
 
                     {project.description && (
-                      <p className="text-sm text-muted-foreground">{project.description}</p>
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {sanitizeDescription(project.description)}
+                      </p>
                     )}
 
                     <div className="flex flex-wrap gap-1.5">
-                      {project.skills.map((skill) => (
+                      {project.skills.slice(0, 4).map((skill) => (
                         <span
                           key={skill}
                           className="px-2 py-0.5 rounded text-xs bg-secondary text-secondary-foreground font-mono"
@@ -271,6 +294,11 @@ const Database = () => {
                           {skill}
                         </span>
                       ))}
+                      {project.skills.length > 4 && (
+                        <span className="px-2 py-0.5 rounded text-xs text-muted-foreground font-mono">
+                          +{project.skills.length - 4} more
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex flex-wrap gap-4 text-xs text-muted-foreground pt-2 border-t border-border">
@@ -284,6 +312,13 @@ const Database = () => {
               </div>
             ))}
           </div>
+
+          {/* Project Detail Dialog */}
+          <ProjectDetailDialog
+            project={selectedProject}
+            open={dialogOpen}
+            onOpenChange={setDialogOpen}
+          />
 
           {filteredData.length === 0 && (
             <div className="text-center py-20">
