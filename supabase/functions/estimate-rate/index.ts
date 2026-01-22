@@ -50,6 +50,7 @@ Consider these factors:
 - Location: ${projectDetails.projectLocation}
 - Client Country: ${projectDetails.clientCountry}
 - Skills Required: ${projectDetails.skills.join(", ")}
+${projectDetails.description ? `\nProject Description:\n${projectDetails.description}` : ""}
 
 Similar Projects (${similarProjects.length} found):
 ${similarProjects

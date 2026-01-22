@@ -6,6 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
   PROJECT_TYPES,
   CLIENT_TYPES,
@@ -30,6 +31,8 @@ interface EstimateFormProps {
   setProjectLocation: (value: string) => void;
   selectedSkills: string[];
   toggleSkill: (skill: string) => void;
+  description?: string;
+  setDescription?: (value: string) => void;
 }
 
 const EstimateForm = ({
@@ -47,6 +50,8 @@ const EstimateForm = ({
   setProjectLocation,
   selectedSkills,
   toggleSkill,
+  description,
+  setDescription,
 }: EstimateFormProps) => {
   return (
     <div className="space-y-6">
@@ -177,6 +182,29 @@ const EstimateForm = ({
           ))}
         </div>
       </div>
+
+      {/* Optional Description for AI */}
+      {setDescription && (
+        <div className="node-card rounded-xl p-6 border border-border space-y-4">
+          <div className="space-y-1">
+            <h2 className="font-mono font-semibold text-lg border-b border-border pb-3">
+              Project Description{" "}
+              <span className="text-muted-foreground font-normal text-sm">
+                (Optional)
+              </span>
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Add details to help AI provide a more accurate estimate
+            </p>
+          </div>
+          <Textarea
+            placeholder="Describe your project scope, deliverables, complexity, timeline constraints, or any other relevant details..."
+            value={description || ""}
+            onChange={(e) => setDescription(e.target.value)}
+            className="min-h-[100px] font-mono text-sm"
+          />
+        </div>
+      )}
     </div>
   );
 };
