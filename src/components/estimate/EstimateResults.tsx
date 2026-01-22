@@ -1,5 +1,6 @@
-import { TrendingUp, Users, Calendar, MapPin, Sparkles } from "lucide-react";
+import { TrendingUp, Users, Calendar, Sparkles, Brain, Lightbulb } from "lucide-react";
 import SimilarProjectsList, { SimilarProject } from "./SimilarProjectsList";
+import { Badge } from "@/components/ui/badge";
 
 interface EstimateResultsProps {
   estimate: {
@@ -10,9 +11,14 @@ interface EstimateResultsProps {
     similarProjects: SimilarProject[];
   } | null;
   formatCurrency: (amount: number) => string;
+  aiInsights?: {
+    reasoning: string;
+    confidenceLevel: string;
+    keyFactors: string[];
+  } | null;
 }
 
-const EstimateResults = ({ estimate, formatCurrency }: EstimateResultsProps) => {
+const EstimateResults = ({ estimate, formatCurrency, aiInsights }: EstimateResultsProps) => {
   if (!estimate) {
     return (
       <div className="node-card rounded-xl p-12 border border-border text-center">
@@ -66,6 +72,52 @@ const EstimateResults = ({ estimate, formatCurrency }: EstimateResultsProps) => 
           />
         </div>
       </div>
+
+      {/* AI Insights */}
+      {aiInsights && (
+        <div className="node-card rounded-xl p-6 border border-primary/20 bg-primary/5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-primary">
+              <Brain className="h-5 w-5" />
+              <h3 className="font-mono font-semibold">AI Analysis</h3>
+            </div>
+            <Badge
+              variant={
+                aiInsights.confidenceLevel === "high"
+                  ? "default"
+                  : aiInsights.confidenceLevel === "medium"
+                  ? "secondary"
+                  : "outline"
+              }
+              className="font-mono text-xs"
+            >
+              {aiInsights.confidenceLevel} confidence
+            </Badge>
+          </div>
+
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {aiInsights.reasoning}
+          </p>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Lightbulb className="h-4 w-4 text-primary" />
+              <span>Key Factors</span>
+            </div>
+            <ul className="space-y-1">
+              {aiInsights.keyFactors.map((factor, index) => (
+                <li
+                  key={index}
+                  className="text-sm text-muted-foreground flex items-start gap-2"
+                >
+                  <span className="text-primary mt-1">•</span>
+                  {factor}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
 
       <div className="node-card rounded-xl p-6 border border-border space-y-4">
         <h3 className="font-mono font-semibold">Analysis Based On</h3>

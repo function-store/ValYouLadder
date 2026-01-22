@@ -1,11 +1,24 @@
 import { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Calculator } from "lucide-react";
 import { SKILLS, COUNTRIES } from "@/lib/projectTypes";
 import EstimateForm from "@/components/estimate/EstimateForm";
 import EstimateResults from "@/components/estimate/EstimateResults";
 import { SimilarProject } from "@/components/estimate/SimilarProjectsList";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+interface AIEstimateResponse {
+  low: number;
+  mid: number;
+  high: number;
+  reasoning: string;
+  confidenceLevel: "low" | "medium" | "high";
+  keyFactors: string[];
+}
 
 const Estimate = () => {
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
@@ -15,6 +28,12 @@ const Estimate = () => {
   const [expertiseLevel, setExpertiseLevel] = useState("");
   const [clientCountry, setClientCountry] = useState("");
   const [projectLocation, setProjectLocation] = useState("");
+  const [useAI, setUseAI] = useState(false);
+  const [aiInsights, setAiInsights] = useState<{
+    reasoning: string;
+    confidenceLevel: string;
+    keyFactors: string[];
+  } | null>(null);
   const [estimate, setEstimate] = useState<{
     low: number;
     mid: number;
@@ -69,12 +88,7 @@ const Estimate = () => {
     }));
   };
 
-  const calculateEstimate = async () => {
-    setIsCalculating(true);
-
-    // Simulate AI processing
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
+  const calculateBaseEstimate = () => {
     // Mock calculation based on inputs
     const baseRate =
       {
@@ -126,28 +140,90 @@ const Estimate = () => {
       ? 1.2
       : 1;
 
-    const midEstimate = Math.round(
+    return Math.round(
       baseRate *
         lengthMultiplier *
         expertiseMultiplier *
         skillsMultiplier *
         locationMultiplier
     );
+  };
+
+  const calculateEstimate = async () => {
+    setIsCalculating(true);
+    setAiInsights(null);
 
     const sampleSize = Math.floor(Math.random() * 30) + 10;
+    const baseEstimate = calculateBaseEstimate();
     const similarProjects = generateSimilarProjects(
       sampleSize,
-      midEstimate,
+      baseEstimate,
       selectedSkills.length > 0 ? selectedSkills : SKILLS.slice(0, 5)
     );
 
-    setEstimate({
-      low: Math.round(midEstimate * 0.7),
-      mid: midEstimate,
-      high: Math.round(midEstimate * 1.4),
-      sampleSize,
-      similarProjects,
-    });
+    if (useAI) {
+      try {
+        const { data, error } = await supabase.functions.invoke("estimate-rate", {
+          body: {
+            projectDetails: {
+              projectType,
+              clientType,
+              projectLength,
+              expertiseLevel,
+              projectLocation,
+              clientCountry,
+              skills: selectedSkills,
+            },
+            similarProjects,
+          },
+        });
+
+        if (error) throw error;
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        setEstimate({
+          low: data.low,
+          mid: data.mid,
+          high: data.high,
+          sampleSize,
+          similarProjects,
+        });
+
+        setAiInsights({
+          reasoning: data.reasoning,
+          confidenceLevel: data.confidenceLevel,
+          keyFactors: data.keyFactors,
+        });
+
+        toast.success("AI analysis complete!");
+      } catch (error) {
+        console.error("AI estimation error:", error);
+        toast.error("AI estimation failed, using formula-based calculation");
+        
+        // Fallback to formula-based
+        setEstimate({
+          low: Math.round(baseEstimate * 0.7),
+          mid: baseEstimate,
+          high: Math.round(baseEstimate * 1.4),
+          sampleSize,
+          similarProjects,
+        });
+      }
+    } else {
+      // Formula-based estimation
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      
+      setEstimate({
+        low: Math.round(baseEstimate * 0.7),
+        mid: baseEstimate,
+        high: Math.round(baseEstimate * 1.4),
+        sampleSize,
+        similarProjects,
+      });
+    }
 
     setIsCalculating(false);
   };
@@ -206,6 +282,27 @@ const Estimate = () => {
                 toggleSkill={toggleSkill}
               />
 
+              {/* AI Toggle */}
+              <div className="flex items-center space-x-3 p-4 rounded-lg bg-secondary/50 border border-border">
+                <Checkbox
+                  id="use-ai"
+                  checked={useAI}
+                  onCheckedChange={(checked) => setUseAI(checked === true)}
+                />
+                <div className="flex-1">
+                  <Label
+                    htmlFor="use-ai"
+                    className="text-sm font-medium cursor-pointer flex items-center gap-2"
+                  >
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    Use AI-Enhanced Estimation
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Get smarter estimates with reasoning and key factors
+                  </p>
+                </div>
+              </div>
+
               <Button
                 variant="glow"
                 size="xl"
@@ -213,13 +310,27 @@ const Estimate = () => {
                 onClick={calculateEstimate}
                 disabled={!canCalculate || isCalculating}
               >
-                <Sparkles className="h-5 w-5" />
-                {isCalculating ? "Analyzing..." : "Get AI Estimate"}
+                {useAI ? (
+                  <Sparkles className="h-5 w-5" />
+                ) : (
+                  <Calculator className="h-5 w-5" />
+                )}
+                {isCalculating
+                  ? useAI
+                    ? "AI Analyzing..."
+                    : "Calculating..."
+                  : useAI
+                  ? "Get AI Estimate"
+                  : "Calculate Estimate"}
               </Button>
             </div>
 
             {/* Results */}
-            <EstimateResults estimate={estimate} formatCurrency={formatCurrency} />
+            <EstimateResults
+              estimate={estimate}
+              formatCurrency={formatCurrency}
+              aiInsights={aiInsights}
+            />
           </div>
         </div>
       </div>
