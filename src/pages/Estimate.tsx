@@ -29,6 +29,7 @@ const Estimate = () => {
   const [clientCountry, setClientCountry] = useState("");
   const [projectLocation, setProjectLocation] = useState("");
   const [useAI, setUseAI] = useState(false);
+  const [description, setDescription] = useState("");
   const [aiInsights, setAiInsights] = useState<{
     reasoning: string;
     confidenceLevel: string;
@@ -173,6 +174,7 @@ const Estimate = () => {
               projectLocation,
               clientCountry,
               skills: selectedSkills,
+              description: description || undefined,
             },
             similarProjects,
           },
@@ -280,6 +282,8 @@ const Estimate = () => {
                 setProjectLocation={setProjectLocation}
                 selectedSkills={selectedSkills}
                 toggleSkill={toggleSkill}
+                description={description}
+                setDescription={setDescription}
               />
 
               {/* AI Toggle */}
