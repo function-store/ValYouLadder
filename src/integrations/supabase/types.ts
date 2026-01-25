@@ -14,7 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      project_submissions: {
+        Row: {
+          client_country: string
+          client_type: string
+          created_at: string
+          description: string | null
+          expertise_level: string
+          id: string
+          project_length: string
+          project_location: string
+          project_type: string
+          skills: string[]
+          team_size: number
+          total_budget: number
+          year_completed: number
+          your_budget: number
+        }
+        Insert: {
+          client_country: string
+          client_type: string
+          created_at?: string
+          description?: string | null
+          expertise_level: string
+          id?: string
+          project_length: string
+          project_location: string
+          project_type: string
+          skills?: string[]
+          team_size?: number
+          total_budget: number
+          year_completed: number
+          your_budget: number
+        }
+        Update: {
+          client_country?: string
+          client_type?: string
+          created_at?: string
+          description?: string | null
+          expertise_level?: string
+          id?: string
+          project_length?: string
+          project_location?: string
+          project_type?: string
+          skills?: string[]
+          team_size?: number
+          total_budget?: number
+          year_completed?: number
+          your_budget?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
