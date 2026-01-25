@@ -2,7 +2,7 @@ import { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Calculator } from "lucide-react";
-import { SKILLS, COUNTRIES } from "@/lib/projectTypes";
+import { SKILLS } from "@/lib/projectTypes";
 import EstimateForm from "@/components/estimate/EstimateForm";
 import EstimateResults from "@/components/estimate/EstimateResults";
 import { SimilarProject } from "@/components/estimate/SimilarProjectsList";
@@ -11,13 +11,20 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-interface AIEstimateResponse {
-  low: number;
-  mid: number;
-  high: number;
-  reasoning: string;
-  confidenceLevel: "low" | "medium" | "high";
-  keyFactors: string[];
+interface DatabaseProject {
+  id: string;
+  project_type: string;
+  client_type: string;
+  project_length: string;
+  client_country: string;
+  project_location: string;
+  skills: string[];
+  expertise_level: string;
+  total_budget: number;
+  your_budget: number;
+  team_size: number;
+  year_completed: number;
+  description: string | null;
 }
 
 const Estimate = () => {
@@ -50,47 +57,107 @@ const Estimate = () => {
     );
   };
 
-  const generateSimilarProjects = (
-    count: number,
-    baseRate: number,
-    skills: string[]
-  ): SimilarProject[] => {
-    const clientTypes = [
-      "global-brand",
-      "big-brand",
-      "small-brand",
-      "institution",
-      "festival",
-      "musician",
-      "agency",
-    ];
-    const projectTypes = [
-      "commission",
-      "collaboration",
-      "technical",
-      "consultation",
-    ];
-    const expertiseLevels = ["junior", "mid", "senior", "expert"];
-    const locations = COUNTRIES.filter((c) => c !== "Other").slice(0, 10);
+  // Calculate similarity score between user input and a project
+  const calculateSimilarityScore = (project: DatabaseProject): number => {
+    let score = 0;
+    
+    // Exact matches (higher weight)
+    if (project.project_type === projectType) score += 20;
+    if (project.client_type === clientType) score += 25;
+    if (project.expertise_level === expertiseLevel) score += 15;
+    if (project.project_length === projectLength) score += 10;
+    
+    // Location matches
+    if (project.project_location === projectLocation) score += 10;
+    if (project.client_country === clientCountry) score += 5;
+    
+    // Skills overlap (most important for similarity)
+    const projectSkills = new Set(project.skills);
+    const matchingSkills = selectedSkills.filter(s => projectSkills.has(s));
+    const skillOverlapRatio = selectedSkills.length > 0 
+      ? matchingSkills.length / selectedSkills.length 
+      : 0;
+    score += skillOverlapRatio * 30;
+    
+    // Recency bonus (prefer recent projects)
+    const currentYear = new Date().getFullYear();
+    if (project.year_completed === currentYear) score += 5;
+    else if (project.year_completed === currentYear - 1) score += 3;
+    
+    return score;
+  };
 
-    return Array.from({ length: count }, (_, i) => ({
-      id: `project-${i + 1}`,
-      projectType: projectTypes[Math.floor(Math.random() * projectTypes.length)],
-      clientType: clientTypes[Math.floor(Math.random() * clientTypes.length)],
-      projectLength: projectLength || "medium",
-      location: locations[Math.floor(Math.random() * locations.length)],
-      skills: skills
-        .sort(() => Math.random() - 0.5)
-        .slice(0, Math.floor(Math.random() * 3) + 2),
-      expertiseLevel:
-        expertiseLevels[Math.floor(Math.random() * expertiseLevels.length)],
-      budget: Math.round(baseRate * (0.5 + Math.random() * 1.5)),
-      yearCompleted: Math.random() > 0.5 ? 2024 : 2023,
+  // Fetch and rank similar projects from the database
+  const fetchSimilarProjects = async (): Promise<SimilarProject[]> => {
+    const { data, error } = await supabase
+      .from("project_submissions")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (error) {
+      console.error("Error fetching projects:", error);
+      return [];
+    }
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // Score and sort projects by similarity
+    const scoredProjects = data.map((project) => ({
+      project,
+      score: calculateSimilarityScore(project),
+    }));
+
+    scoredProjects.sort((a, b) => b.score - a.score);
+
+    // Take top matches and convert to SimilarProject format
+    return scoredProjects.slice(0, 20).map(({ project }) => ({
+      id: project.id,
+      projectType: project.project_type,
+      clientType: project.client_type,
+      projectLength: project.project_length,
+      location: project.project_location,
+      skills: project.skills,
+      expertiseLevel: project.expertise_level,
+      budget: project.your_budget,
+      yearCompleted: project.year_completed,
+      description: project.description || undefined,
+      teamSize: project.team_size,
+      clientCountry: project.client_country,
     }));
   };
 
-  const calculateBaseEstimate = () => {
-    // Mock calculation based on inputs
+  // Calculate estimate from real project data
+  const calculateFromRealData = (projects: SimilarProject[]): { low: number; mid: number; high: number } => {
+    if (projects.length === 0) {
+      // Fallback to formula-based if no data
+      return calculateFormulaEstimate();
+    }
+
+    // Weight budgets by similarity (top projects weighted more)
+    const budgets = projects.map(p => p.budget);
+    
+    // Calculate weighted percentiles
+    const sorted = [...budgets].sort((a, b) => a - b);
+    const low = sorted[Math.floor(sorted.length * 0.25)] || sorted[0];
+    const high = sorted[Math.floor(sorted.length * 0.75)] || sorted[sorted.length - 1];
+    
+    // Median as mid estimate
+    const mid = sorted.length % 2 === 0
+      ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
+      : sorted[Math.floor(sorted.length / 2)];
+
+    return {
+      low: Math.round(low),
+      mid: Math.round(mid),
+      high: Math.round(high),
+    };
+  };
+
+  // Formula-based fallback
+  const calculateFormulaEstimate = () => {
     const baseRate =
       {
         "global-brand": 25000,
@@ -127,7 +194,6 @@ const Estimate = () => {
 
     const skillsMultiplier = 1 + selectedSkills.length * 0.05;
 
-    // Location-based adjustments
     const highCostCountries = [
       "United States",
       "United Kingdom",
@@ -141,89 +207,111 @@ const Estimate = () => {
       ? 1.2
       : 1;
 
-    return Math.round(
+    const mid = Math.round(
       baseRate *
         lengthMultiplier *
         expertiseMultiplier *
         skillsMultiplier *
         locationMultiplier
     );
+
+    return {
+      low: Math.round(mid * 0.7),
+      mid,
+      high: Math.round(mid * 1.4),
+    };
   };
 
   const calculateEstimate = async () => {
     setIsCalculating(true);
     setAiInsights(null);
 
-    const sampleSize = Math.floor(Math.random() * 30) + 10;
-    const baseEstimate = calculateBaseEstimate();
-    const similarProjects = generateSimilarProjects(
-      sampleSize,
-      baseEstimate,
-      selectedSkills.length > 0 ? selectedSkills : SKILLS.slice(0, 5)
-    );
+    try {
+      // Fetch real similar projects from database
+      const similarProjects = await fetchSimilarProjects();
+      const sampleSize = similarProjects.length;
 
-    if (useAI) {
-      try {
-        const { data, error } = await supabase.functions.invoke("estimate-rate", {
-          body: {
-            projectDetails: {
-              projectType,
-              clientType,
-              projectLength,
-              expertiseLevel,
-              projectLocation,
-              clientCountry,
-              skills: selectedSkills,
-              description: description || undefined,
+      if (useAI) {
+        try {
+          const { data, error } = await supabase.functions.invoke("estimate-rate", {
+            body: {
+              projectDetails: {
+                projectType,
+                clientType,
+                projectLength,
+                expertiseLevel,
+                projectLocation,
+                clientCountry,
+                skills: selectedSkills,
+                description: description || undefined,
+              },
+              similarProjects,
             },
+          });
+
+          if (error) throw error;
+
+          if (data.error) {
+            throw new Error(data.error);
+          }
+
+          setEstimate({
+            low: data.low,
+            mid: data.mid,
+            high: data.high,
+            sampleSize,
             similarProjects,
-          },
-        });
+          });
 
-        if (error) throw error;
+          setAiInsights({
+            reasoning: data.reasoning,
+            confidenceLevel: data.confidenceLevel,
+            keyFactors: data.keyFactors,
+          });
 
-        if (data.error) {
-          throw new Error(data.error);
+          toast.success("AI analysis complete!");
+        } catch (error) {
+          console.error("AI estimation error:", error);
+          toast.error("AI estimation failed, using data-based calculation");
+          
+          // Fallback to data-based or formula
+          const estimates = sampleSize > 0 
+            ? calculateFromRealData(similarProjects)
+            : calculateFormulaEstimate();
+          
+          setEstimate({
+            ...estimates,
+            sampleSize,
+            similarProjects,
+          });
+        }
+      } else {
+        // Data-based or formula estimation
+        const estimates = sampleSize > 0 
+          ? calculateFromRealData(similarProjects)
+          : calculateFormulaEstimate();
+
+        // Show info if using formula fallback
+        if (sampleSize === 0) {
+          toast.info("No matching projects found. Using formula-based estimate.");
         }
 
         setEstimate({
-          low: data.low,
-          mid: data.mid,
-          high: data.high,
-          sampleSize,
-          similarProjects,
-        });
-
-        setAiInsights({
-          reasoning: data.reasoning,
-          confidenceLevel: data.confidenceLevel,
-          keyFactors: data.keyFactors,
-        });
-
-        toast.success("AI analysis complete!");
-      } catch (error) {
-        console.error("AI estimation error:", error);
-        toast.error("AI estimation failed, using formula-based calculation");
-        
-        // Fallback to formula-based
-        setEstimate({
-          low: Math.round(baseEstimate * 0.7),
-          mid: baseEstimate,
-          high: Math.round(baseEstimate * 1.4),
+          ...estimates,
           sampleSize,
           similarProjects,
         });
       }
-    } else {
-      // Formula-based estimation
-      await new Promise((resolve) => setTimeout(resolve, 800));
+    } catch (error) {
+      console.error("Estimation error:", error);
+      toast.error("Failed to calculate estimate");
       
+      // Ultimate fallback
+      const estimates = calculateFormulaEstimate();
       setEstimate({
-        low: Math.round(baseEstimate * 0.7),
-        mid: baseEstimate,
-        high: Math.round(baseEstimate * 1.4),
-        sampleSize,
-        similarProjects,
+        ...estimates,
+        sampleSize: 0,
+        similarProjects: [],
       });
     }
 
