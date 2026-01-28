@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      estimate_submissions: {
+        Row: {
+          client_country: string | null
+          client_type: string
+          created_at: string
+          expertise_level: string
+          high_estimate: number
+          id: string
+          low_estimate: number
+          mid_estimate: number
+          project_length: string
+          project_location: string | null
+          project_type: string
+          sample_size: number
+          skills: string[]
+          used_ai: boolean
+        }
+        Insert: {
+          client_country?: string | null
+          client_type: string
+          created_at?: string
+          expertise_level: string
+          high_estimate: number
+          id?: string
+          low_estimate: number
+          mid_estimate: number
+          project_length: string
+          project_location?: string | null
+          project_type: string
+          sample_size?: number
+          skills?: string[]
+          used_ai?: boolean
+        }
+        Update: {
+          client_country?: string | null
+          client_type?: string
+          created_at?: string
+          expertise_level?: string
+          high_estimate?: number
+          id?: string
+          low_estimate?: number
+          mid_estimate?: number
+          project_length?: string
+          project_location?: string | null
+          project_type?: string
+          sample_size?: number
+          skills?: string[]
+          used_ai?: boolean
+        }
+        Relationships: []
+      }
       project_submissions: {
         Row: {
           client_country: string
@@ -65,15 +116,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -200,6 +278,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const

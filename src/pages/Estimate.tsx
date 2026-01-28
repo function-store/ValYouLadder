@@ -222,6 +222,33 @@ const Estimate = () => {
     };
   };
 
+  // Save estimate to database (anonymous tracking)
+  const saveEstimateToDatabase = async (
+    estimates: { low: number; mid: number; high: number },
+    sampleSize: number,
+    usedAi: boolean
+  ) => {
+    try {
+      await supabase.from("estimate_submissions").insert({
+        project_type: projectType,
+        client_type: clientType,
+        project_length: projectLength,
+        client_country: clientCountry || null,
+        project_location: projectLocation || null,
+        skills: selectedSkills,
+        expertise_level: expertiseLevel,
+        low_estimate: estimates.low,
+        mid_estimate: estimates.mid,
+        high_estimate: estimates.high,
+        used_ai: usedAi,
+        sample_size: sampleSize,
+      });
+    } catch (error) {
+      // Silent fail - we don't want to interrupt user experience
+      console.error("Failed to save estimate:", error);
+    }
+  };
+
   const calculateEstimate = async () => {
     setIsCalculating(true);
     setAiInsights(null);
@@ -255,10 +282,14 @@ const Estimate = () => {
             throw new Error(data.error);
           }
 
-          setEstimate({
+          const estimates = {
             low: data.low,
             mid: data.mid,
             high: data.high,
+          };
+
+          setEstimate({
+            ...estimates,
             sampleSize,
             similarProjects,
           });
@@ -268,6 +299,9 @@ const Estimate = () => {
             confidenceLevel: data.confidenceLevel,
             keyFactors: data.keyFactors,
           });
+
+          // Save to database
+          await saveEstimateToDatabase(estimates, sampleSize, true);
 
           toast.success("AI analysis complete!");
         } catch (error) {
@@ -284,6 +318,9 @@ const Estimate = () => {
             sampleSize,
             similarProjects,
           });
+
+          // Save fallback estimate
+          await saveEstimateToDatabase(estimates, sampleSize, false);
         }
       } else {
         // Data-based or formula estimation
@@ -301,6 +338,9 @@ const Estimate = () => {
           sampleSize,
           similarProjects,
         });
+
+        // Save to database
+        await saveEstimateToDatabase(estimates, sampleSize, false);
       }
     } catch (error) {
       console.error("Estimation error:", error);
@@ -313,6 +353,9 @@ const Estimate = () => {
         sampleSize: 0,
         similarProjects: [],
       });
+
+      // Still save the fallback estimate
+      await saveEstimateToDatabase(estimates, 0, false);
     }
 
     setIsCalculating(false);
