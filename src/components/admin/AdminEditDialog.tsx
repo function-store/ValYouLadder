@@ -1,0 +1,329 @@
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import {
+  PROJECT_TYPES,
+  CLIENT_TYPES,
+  PROJECT_LENGTHS,
+  EXPERTISE_LEVELS,
+  SKILLS,
+  COUNTRIES,
+} from "@/lib/projectTypes";
+import { X } from "lucide-react";
+
+interface ProjectSubmission {
+  id: string;
+  project_type: string;
+  client_type: string;
+  project_length: string;
+  client_country: string;
+  project_location: string;
+  skills: string[];
+  expertise_level: string;
+  total_budget: number;
+  your_budget: number;
+  team_size: number;
+  year_completed: number;
+  description: string | null;
+  created_at: string;
+}
+
+interface AdminEditDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  submission: ProjectSubmission;
+  onSave: (updated: ProjectSubmission) => void;
+}
+
+const AdminEditDialog = ({
+  open,
+  onOpenChange,
+  submission,
+  onSave,
+}: AdminEditDialogProps) => {
+  const [formData, setFormData] = useState<ProjectSubmission>(submission);
+
+  const handleSkillToggle = (skill: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      skills: prev.skills.includes(skill)
+        ? prev.skills.filter((s) => s !== skill)
+        : [...prev.skills, skill],
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Edit Submission</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Project Type</Label>
+              <Select
+                value={formData.project_type}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, project_type: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PROJECT_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Client Type</Label>
+              <Select
+                value={formData.client_type}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, client_type: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CLIENT_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Project Length</Label>
+              <Select
+                value={formData.project_length}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, project_length: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PROJECT_LENGTHS.map((length) => (
+                    <SelectItem key={length.value} value={length.value}>
+                      {length.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Expertise Level</Label>
+              <Select
+                value={formData.expertise_level}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, expertise_level: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {EXPERTISE_LEVELS.map((level) => (
+                    <SelectItem key={level.value} value={level.value}>
+                      {level.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Client Country</Label>
+              <Select
+                value={formData.client_country}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, client_country: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {COUNTRIES.map((country) => (
+                    <SelectItem key={country} value={country}>
+                      {country}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Project Location</Label>
+              <Select
+                value={formData.project_location}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, project_location: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {COUNTRIES.map((country) => (
+                    <SelectItem key={country} value={country}>
+                      {country}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Your Budget</Label>
+              <Input
+                type="number"
+                value={formData.your_budget}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    your_budget: parseInt(e.target.value) || 0,
+                  }))
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Total Budget</Label>
+              <Input
+                type="number"
+                value={formData.total_budget}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    total_budget: parseInt(e.target.value) || 0,
+                  }))
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Team Size</Label>
+              <Input
+                type="number"
+                value={formData.team_size}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    team_size: parseInt(e.target.value) || 1,
+                  }))
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Year Completed</Label>
+              <Input
+                type="number"
+                value={formData.year_completed}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    year_completed: parseInt(e.target.value) || new Date().getFullYear(),
+                  }))
+                }
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Skills</Label>
+            <div className="flex flex-wrap gap-2 p-3 border border-border rounded-md bg-secondary/20 max-h-32 overflow-y-auto">
+              {formData.skills.map((skill) => (
+                <Badge
+                  key={skill}
+                  variant="default"
+                  className="cursor-pointer"
+                  onClick={() => handleSkillToggle(skill)}
+                >
+                  {skill}
+                  <X className="h-3 w-3 ml-1" />
+                </Badge>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-1 mt-2">
+              {SKILLS.filter((skill) => !formData.skills.includes(skill)).map(
+                (skill) => (
+                  <Badge
+                    key={skill}
+                    variant="outline"
+                    className="cursor-pointer hover:bg-secondary"
+                    onClick={() => handleSkillToggle(skill)}
+                  >
+                    + {skill}
+                  </Badge>
+                )
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Description</Label>
+            <Textarea
+              value={formData.description || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  description: e.target.value || null,
+                }))
+              }
+              rows={3}
+            />
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit">Save Changes</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default AdminEditDialog;
