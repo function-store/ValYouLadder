@@ -20,6 +20,7 @@ import {
 } from "@/lib/projectTypes";
 import { validateDescription, sanitizeDescriptionWithAI } from "@/lib/sanitizeSubmission";
 import VerificationStep from "@/components/submit/VerificationStep";
+import PrivacyConsentCheckbox from "@/components/gdpr/PrivacyConsentCheckbox";
 
 const formSchema = z.object({
   projectType: z.string().min(1, "Project type is required"),
@@ -45,6 +46,7 @@ const SubmitProject = () => {
   const [isVerified, setIsVerified] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [descriptionWarnings, setDescriptionWarnings] = useState<string[]>([]);
+  const [privacyConsent, setPrivacyConsent] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -79,10 +81,12 @@ const SubmitProject = () => {
   };
 
   const onSubmit = async (data: FormData) => {
-    if (!isVerified) {
+    if (!isVerified || !privacyConsent) {
       toast({
-        title: "Verification required",
-        description: "Please complete the verification step first.",
+        title: !isVerified ? "Verification required" : "Consent required",
+        description: !isVerified 
+          ? "Please complete the verification step first."
+          : "Please agree to the privacy policy before submitting.",
         variant: "destructive",
       });
       return;
@@ -385,16 +389,23 @@ const SubmitProject = () => {
               )}
             </div>
 
+            {/* Privacy Consent */}
+            <PrivacyConsentCheckbox
+              checked={privacyConsent}
+              onCheckedChange={setPrivacyConsent}
+              id="submit-privacy-consent"
+            />
+
             {/* Verification Step */}
             <VerificationStep
               onVerified={() => setIsVerified(true)}
               isVerifying={isSubmitting}
             />
 
-            {isVerified && (
+            {isVerified && privacyConsent && (
               <div className="flex items-center gap-2 text-sm text-primary">
                 <CheckCircle2 className="h-4 w-4" />
-                Verification complete
+                Ready to submit
               </div>
             )}
 
@@ -403,7 +414,7 @@ const SubmitProject = () => {
               variant="glow" 
               size="xl" 
               className="w-full gap-2"
-              disabled={!isVerified || isSubmitting}
+              disabled={!isVerified || !privacyConsent || isSubmitting}
             >
               <Send className="h-5 w-5" />
               {isSubmitting ? "Submitting..." : "Submit Anonymously"}
