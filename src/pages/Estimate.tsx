@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import PrivacyConsentCheckbox from "@/components/gdpr/PrivacyConsentCheckbox";
 
 interface DatabaseProject {
   id: string;
@@ -36,6 +37,7 @@ const Estimate = () => {
   const [clientCountry, setClientCountry] = useState("");
   const [projectLocation, setProjectLocation] = useState("");
   const [useAI, setUseAI] = useState(false);
+  const [privacyConsent, setPrivacyConsent] = useState(false);
   const [description, setDescription] = useState("");
   const [aiInsights, setAiInsights] = useState<{
     reasoning: string;
@@ -374,7 +376,8 @@ const Estimate = () => {
     clientType &&
     projectLength &&
     expertiseLevel &&
-    selectedSkills.length > 0;
+    selectedSkills.length > 0 &&
+    privacyConsent;
 
   return (
     <Layout>
@@ -437,6 +440,13 @@ const Estimate = () => {
                   </p>
                 </div>
               </div>
+
+              {/* Privacy Consent */}
+              <PrivacyConsentCheckbox
+                checked={privacyConsent}
+                onCheckedChange={setPrivacyConsent}
+                id="estimate-privacy-consent"
+              />
 
               <Button
                 variant="glow"
