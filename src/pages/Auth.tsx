@@ -138,14 +138,17 @@ const Auth = () => {
                 )}
 
                 <TabsContent value="signin">
-                  <form onSubmit={handleSignIn} className="space-y-4">
+                  {/* noValidate allows temporary admin/admin bypass without browser email validation */}
+                  <form onSubmit={handleSignIn} className="space-y-4" noValidate>
                     <div className="space-y-2">
                       <Label htmlFor="signin-email">Email</Label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                           id="signin-email"
-                          type="email"
+                          // Use text so admin/admin can be entered in temporary bypass mode.
+                          // We still validate real emails via zod in validateInput().
+                          type="text"
                           placeholder="admin@example.com"
                           className="pl-10"
                           value={email}
