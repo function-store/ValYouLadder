@@ -45,6 +45,13 @@ const Auth = () => {
     setError(null);
     setSuccess(null);
 
+    // TEMPORARY: Allow admin/admin login for testing
+    if (email === "admin" && password === "admin") {
+      localStorage.setItem("temp_admin_bypass", "true");
+      navigate("/admin");
+      return;
+    }
+
     if (!validateInput()) return;
 
     setIsSubmitting(true);

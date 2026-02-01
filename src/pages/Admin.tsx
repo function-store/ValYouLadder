@@ -85,17 +85,20 @@ const Admin = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ProjectSubmission | null>(null);
 
-  useEffect(() => {
-    if (!isLoading && !user) {
-      navigate("/auth");
-    }
-  }, [user, isLoading, navigate]);
+  // TEMPORARY: Check for admin bypass
+  const hasTempBypass = localStorage.getItem("temp_admin_bypass") === "true";
 
   useEffect(() => {
-    if (user && isAdmin) {
+    if (!isLoading && !user && !hasTempBypass) {
+      navigate("/auth");
+    }
+  }, [user, isLoading, navigate, hasTempBypass]);
+
+  useEffect(() => {
+    if ((user && isAdmin) || hasTempBypass) {
       fetchData();
     }
-  }, [user, isAdmin]);
+  }, [user, isAdmin, hasTempBypass]);
 
   const fetchData = async () => {
     setLoadingData(true);
@@ -190,6 +193,7 @@ const Admin = () => {
   };
 
   const handleSignOut = async () => {
+    localStorage.removeItem("temp_admin_bypass");
     await signOut();
     navigate("/");
   };
@@ -220,7 +224,7 @@ const Admin = () => {
     );
   }
 
-  if (!isAdmin) {
+  if (!isAdmin && !hasTempBypass) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-12">
