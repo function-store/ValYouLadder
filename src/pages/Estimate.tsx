@@ -132,21 +132,16 @@ const Estimate = () => {
   };
 
   // Calculate estimate from real project data
-  const calculateFromRealData = (projects: SimilarProject[]): { low: number; mid: number; high: number } => {
+  const calculateFromRealData = (projects: SimilarProject[]): { low: number; mid: number; high: number } | null => {
     if (projects.length === 0) {
-      // Fallback to formula-based if no data
-      return calculateFormulaEstimate();
+      return null;
     }
 
-    // Weight budgets by similarity (top projects weighted more)
     const budgets = projects.map(p => p.budget);
-    
-    // Calculate weighted percentiles
     const sorted = [...budgets].sort((a, b) => a - b);
     const low = sorted[Math.floor(sorted.length * 0.25)] || sorted[0];
     const high = sorted[Math.floor(sorted.length * 0.75)] || sorted[sorted.length - 1];
     
-    // Median as mid estimate
     const mid = sorted.length % 2 === 0
       ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
       : sorted[Math.floor(sorted.length / 2)];
@@ -158,71 +153,6 @@ const Estimate = () => {
     };
   };
 
-  // Formula-based fallback
-  const calculateFormulaEstimate = () => {
-    const baseRate =
-      {
-        "global-brand": 25000,
-        "big-brand": 15000,
-        "small-brand": 5000,
-        institution: 12000,
-        festival: 4000,
-        musician: 8000,
-        exhibition: 10000,
-        agency: 12000,
-        private: 3000,
-        other: 5000,
-      }[clientType] || 5000;
-
-    const lengthMultiplier =
-      {
-        "one-off": 0.3,
-        short: 0.5,
-        medium: 1,
-        long: 2,
-        performance: 0.4,
-        tour: 3,
-        "installation-temp": 0.8,
-        "installation-perm": 2.5,
-      }[projectLength] || 1;
-
-    const expertiseMultiplier =
-      {
-        junior: 0.6,
-        mid: 1,
-        senior: 1.5,
-        expert: 2.2,
-      }[expertiseLevel] || 1;
-
-    const skillsMultiplier = 1 + selectedSkills.length * 0.05;
-
-    const highCostCountries = [
-      "United States",
-      "United Kingdom",
-      "Switzerland",
-      "Norway",
-      "Denmark",
-      "Sweden",
-      "Australia",
-    ];
-    const locationMultiplier = highCostCountries.includes(projectLocation)
-      ? 1.2
-      : 1;
-
-    const mid = Math.round(
-      baseRate *
-        lengthMultiplier *
-        expertiseMultiplier *
-        skillsMultiplier *
-        locationMultiplier
-    );
-
-    return {
-      low: Math.round(mid * 0.7),
-      mid,
-      high: Math.round(mid * 1.4),
-    };
-  };
 
   // Save estimate to database (anonymous tracking)
   const saveEstimateToDatabase = async (
@@ -308,31 +238,29 @@ const Estimate = () => {
           toast.success("AI analysis complete!");
         } catch (error) {
           console.error("AI estimation error:", error);
+          
+          const estimates = calculateFromRealData(similarProjects);
+          if (!estimates) {
+            toast.error("Not enough community data to generate an estimate. Try broadening your criteria.");
+            setIsCalculating(false);
+            return;
+          }
+          
           toast.error("AI estimation failed, using data-based calculation");
-          
-          // Fallback to data-based or formula
-          const estimates = sampleSize > 0 
-            ? calculateFromRealData(similarProjects)
-            : calculateFormulaEstimate();
-          
           setEstimate({
             ...estimates,
             sampleSize,
             similarProjects,
           });
-
-          // Save fallback estimate
           await saveEstimateToDatabase(estimates, sampleSize, false);
         }
       } else {
-        // Data-based or formula estimation
-        const estimates = sampleSize > 0 
-          ? calculateFromRealData(similarProjects)
-          : calculateFormulaEstimate();
+        const estimates = calculateFromRealData(similarProjects);
 
-        // Show info if using formula fallback
-        if (sampleSize === 0) {
-          toast.info("No matching projects found. Using formula-based estimate.");
+        if (!estimates) {
+          toast.info("Not enough community data to generate an estimate. Try broadening your criteria or submit your own project to help grow the database.");
+          setIsCalculating(false);
+          return;
         }
 
         setEstimate({
@@ -340,24 +268,11 @@ const Estimate = () => {
           sampleSize,
           similarProjects,
         });
-
-        // Save to database
         await saveEstimateToDatabase(estimates, sampleSize, false);
       }
     } catch (error) {
       console.error("Estimation error:", error);
-      toast.error("Failed to calculate estimate");
-      
-      // Ultimate fallback
-      const estimates = calculateFormulaEstimate();
-      setEstimate({
-        ...estimates,
-        sampleSize: 0,
-        similarProjects: [],
-      });
-
-      // Still save the fallback estimate
-      await saveEstimateToDatabase(estimates, 0, false);
+      toast.error("Failed to calculate estimate. Please try again.");
     }
 
     setIsCalculating(false);
