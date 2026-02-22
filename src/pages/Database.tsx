@@ -1,10 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, ArrowUpDown, Filter, DollarSign, Eye } from "lucide-react";
+import { Search, ArrowUpDown, Filter, DollarSign, Eye, Loader2 } from "lucide-react";
 import {
   PROJECT_TYPES,
   CLIENT_TYPES,
@@ -14,85 +14,7 @@ import {
 } from "@/lib/projectTypes";
 import ProjectDetailDialog from "@/components/database/ProjectDetailDialog";
 import { sanitizeDescription } from "@/lib/sanitizeSubmission";
-
-// Mock data for demonstration
-const MOCK_DATA: ProjectSubmission[] = [
-  {
-    id: "1",
-    projectType: "commission",
-    clientType: "global-brand",
-    projectLength: "medium",
-    clientCountry: "United States",
-    projectLocation: "United States",
-    skills: ["TouchDesigner", "LED Mapping", "Projection Mapping"],
-    expertiseLevel: "senior",
-    totalBudget: 150000,
-    yourBudget: 35000,
-    teamSize: 4,
-    yearCompleted: 2024,
-    description: "Large-scale brand activation with interactive LED installation",
-  },
-  {
-    id: "2",
-    projectType: "collaboration",
-    clientType: "festival",
-    projectLength: "short",
-    clientCountry: "Germany",
-    projectLocation: "Germany",
-    skills: ["VJing", "Resolume", "Audio Reactive"],
-    expertiseLevel: "mid",
-    totalBudget: 15000,
-    yourBudget: 4500,
-    teamSize: 2,
-    yearCompleted: 2024,
-    description: "Festival stage visuals for electronic music event",
-  },
-  {
-    id: "3",
-    projectType: "technical",
-    clientType: "institution",
-    projectLength: "installation-perm",
-    clientCountry: "United Kingdom",
-    projectLocation: "United Kingdom",
-    skills: ["TouchDesigner", "Interactive Installation", "Kinect / Depth Sensors"],
-    expertiseLevel: "expert",
-    totalBudget: 280000,
-    yourBudget: 75000,
-    teamSize: 3,
-    yearCompleted: 2023,
-    description: "Interactive museum piece with motion tracking",
-  },
-  {
-    id: "4",
-    projectType: "commission",
-    clientType: "musician",
-    projectLength: "tour",
-    clientCountry: "United States",
-    projectLocation: "United States",
-    skills: ["Notch", "Unreal Engine", "Live Performance"],
-    expertiseLevel: "senior",
-    totalBudget: 200000,
-    yourBudget: 45000,
-    teamSize: 2,
-    yearCompleted: 2024,
-    description: "Tour visuals for major artist, 30 dates",
-  },
-  {
-    id: "5",
-    projectType: "workshop",
-    clientType: "institution",
-    projectLength: "one-off",
-    clientCountry: "Netherlands",
-    projectLocation: "Netherlands",
-    skills: ["TouchDesigner", "Generative Art"],
-    expertiseLevel: "expert",
-    totalBudget: 3000,
-    yourBudget: 2500,
-    teamSize: 1,
-    yearCompleted: 2024,
-    description: "Two-day intensive TouchDesigner workshop",
-  },
-];
+import { supabase } from "@/integrations/supabase/client";
 
 const Database = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -102,9 +24,61 @@ const Database = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [selectedProject, setSelectedProject] = useState<ProjectSubmission | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [projects, setProjects] = useState<ProjectSubmission[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      setLoading(true);
+      const allData: ProjectSubmission[] = [];
+      let offset = 0;
+      const batchSize = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("project_submissions")
+          .select("*")
+          .range(offset, offset + batchSize - 1);
+
+        if (error) {
+          console.error("Error fetching projects:", error);
+          break;
+        }
+
+        if (data && data.length > 0) {
+          allData.push(
+            ...data.map((row) => ({
+              id: row.id,
+              projectType: row.project_type,
+              clientType: row.client_type,
+              projectLength: row.project_length,
+              clientCountry: row.client_country,
+              projectLocation: row.project_location,
+              skills: row.skills || [],
+              expertiseLevel: row.expertise_level,
+              totalBudget: row.total_budget,
+              yourBudget: row.your_budget,
+              teamSize: row.team_size,
+              yearCompleted: row.year_completed,
+              description: row.description ?? undefined,
+            }))
+          );
+          offset += batchSize;
+          hasMore = data.length === batchSize;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      setProjects(allData);
+      setLoading(false);
+    };
+
+    fetchProjects();
+  }, []);
 
   const handleViewProject = (project: ProjectSubmission) => {
-    // Sanitize description before showing
     const sanitizedProject = {
       ...project,
       description: sanitizeDescription(project.description),
@@ -114,9 +88,8 @@ const Database = () => {
   };
 
   const filteredData = useMemo(() => {
-    let data = [...MOCK_DATA];
+    let data = [...projects];
 
-    // Apply filters
     if (filterProjectType !== "all") {
       data = data.filter((p) => p.projectType === filterProjectType);
     }
@@ -133,7 +106,6 @@ const Database = () => {
       );
     }
 
-    // Apply sorting
     data.sort((a, b) => {
       const aVal = a[sortBy];
       const bVal = b[sortBy];
@@ -142,7 +114,7 @@ const Database = () => {
     });
 
     return data;
-  }, [searchTerm, filterProjectType, filterClientType, sortBy, sortOrder]);
+  }, [projects, searchTerm, filterProjectType, filterClientType, sortBy, sortOrder]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -237,6 +209,12 @@ const Database = () => {
           </div>
 
           {/* Results count */}
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+          <>
           <div className="mb-4 text-sm text-muted-foreground font-mono">
             {filteredData.length} project{filteredData.length !== 1 ? "s" : ""} found
           </div>
@@ -320,10 +298,12 @@ const Database = () => {
             onOpenChange={setDialogOpen}
           />
 
-          {filteredData.length === 0 && (
+          {filteredData.length === 0 && !loading && (
             <div className="text-center py-20">
               <p className="text-muted-foreground">No projects match your criteria.</p>
             </div>
+          )}
+          </>
           )}
         </div>
       </div>
