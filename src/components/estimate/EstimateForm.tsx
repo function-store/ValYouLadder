@@ -14,6 +14,7 @@ import {
   EXPERTISE_LEVELS,
   SKILLS,
   COUNTRIES,
+  YOUR_ROLES,
 } from "@/lib/projectTypes";
 
 interface EstimateFormProps {
@@ -25,6 +26,8 @@ interface EstimateFormProps {
   setProjectLength: (value: string) => void;
   expertiseLevel: string;
   setExpertiseLevel: (value: string) => void;
+  yourRole: string;
+  setYourRole: (value: string) => void;
   clientCountry: string;
   setClientCountry: (value: string) => void;
   projectLocation: string;
@@ -44,6 +47,8 @@ const EstimateForm = ({
   setProjectLength,
   expertiseLevel,
   setExpertiseLevel,
+  yourRole,
+  setYourRole,
   clientCountry,
   setClientCountry,
   projectLocation,
@@ -95,10 +100,10 @@ const EstimateForm = ({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Client Country</Label>
-              <Select value={clientCountry} onValueChange={setClientCountry}>
+              <Label>Project Location</Label>
+              <Select value={projectLocation} onValueChange={setProjectLocation}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select country" />
+                  <SelectValue placeholder="Where?" />
                 </SelectTrigger>
                 <SelectContent>
                   {COUNTRIES.map((country) => (
@@ -111,10 +116,13 @@ const EstimateForm = ({
             </div>
 
             <div className="space-y-2">
-              <Label>Project Location</Label>
-              <Select value={projectLocation} onValueChange={setProjectLocation}>
+              <Label>
+                Client Origin{" "}
+                <span className="text-muted-foreground font-normal text-xs">(optional)</span>
+              </Label>
+              <Select value={clientCountry} onValueChange={setClientCountry}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select location" />
+                  <SelectValue placeholder="Client country" />
                 </SelectTrigger>
                 <SelectContent>
                   {COUNTRIES.map((country) => (
@@ -128,10 +136,10 @@ const EstimateForm = ({
           </div>
 
           <div className="space-y-2">
-            <Label>Project Length</Label>
+            <Label>Project Duration</Label>
             <Select value={projectLength} onValueChange={setProjectLength}>
               <SelectTrigger>
-                <SelectValue placeholder="Select length" />
+                <SelectValue placeholder="Select duration" />
               </SelectTrigger>
               <SelectContent>
                 {PROJECT_LENGTHS.map((length) => (
@@ -143,20 +151,38 @@ const EstimateForm = ({
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label>Your Expertise Level</Label>
-            <Select value={expertiseLevel} onValueChange={setExpertiseLevel}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select level" />
-              </SelectTrigger>
-              <SelectContent>
-                {EXPERTISE_LEVELS.map((level) => (
-                  <SelectItem key={level.value} value={level.value}>
-                    {level.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Your Expertise Level</Label>
+              <Select value={expertiseLevel} onValueChange={setExpertiseLevel}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select level" />
+                </SelectTrigger>
+                <SelectContent>
+                  {EXPERTISE_LEVELS.map((level) => (
+                    <SelectItem key={level.value} value={level.value}>
+                      {level.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Your Role</Label>
+              <Select value={yourRole} onValueChange={setYourRole}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {YOUR_ROLES.map((role) => (
+                    <SelectItem key={role.value} value={role.value}>
+                      {role.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
       </div>
@@ -183,7 +209,6 @@ const EstimateForm = ({
         </div>
       </div>
 
-      {/* Optional Description for AI */}
       {setDescription && (
         <div className="node-card rounded-xl p-6 border border-border space-y-4">
           <div className="space-y-1">

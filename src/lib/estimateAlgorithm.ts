@@ -5,13 +5,22 @@
 
 /** Maps project_length categories to midpoint days for rate normalization */
 export const DURATION_DAYS: Record<string, number> = {
-  "Less than a day": 0.5,
-  "1-3 days": 2,
-  "1 week": 5,
-  "2-4 weeks": 15,
-  "1-3 months": 45,
-  "3-6 months": 90,
-  "6+ months": 180,
+  // Current values
+  "day": 1,
+  "2-5-days": 3.5,
+  "1-2-weeks": 7,
+  "1-3-months": 45,
+  "3-6-months": 90,
+  "6plus-months": 180,
+  // Legacy values — kept for backward compat with existing DB entries
+  "one-off": 1,
+  "short": 7,
+  "medium": 45,
+  "long": 120,
+  "performance": 1,
+  "tour": 30,
+  "installation-temp": 30,
+  "installation-perm": 60,
 };
 
 /** Projects scoring below this are excluded — prevents irrelevant data from diluting estimates */

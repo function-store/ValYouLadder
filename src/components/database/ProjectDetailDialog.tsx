@@ -6,12 +6,14 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { DollarSign, MapPin, Calendar, Users, Briefcase } from "lucide-react";
+import { DollarSign, MapPin, Calendar, UserCheck, Briefcase } from "lucide-react";
 import {
   PROJECT_TYPES,
   CLIENT_TYPES,
   PROJECT_LENGTHS,
   EXPERTISE_LEVELS,
+  YOUR_ROLES,
+  RATE_TYPES,
   ProjectSubmission,
 } from "@/lib/projectTypes";
 
@@ -111,15 +113,17 @@ const ProjectDetailDialog = ({ project, open, onOpenChange }: ProjectDetailDialo
               </div>
               <div className="font-medium">{project.yearCompleted}</div>
             </div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-muted-foreground text-xs font-mono uppercase">
-                <Users className="h-3 w-3" />
-                Team Size
+            {project.yourRole && (
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-muted-foreground text-xs font-mono uppercase">
+                  <UserCheck className="h-3 w-3" />
+                  Your Role
+                </div>
+                <div className="font-medium">
+                  {getLabel(project.yourRole, YOUR_ROLES)}
+                </div>
               </div>
-              <div className="font-medium">
-                {project.teamSize} {project.teamSize === 1 ? "person" : "people"}
-              </div>
-            </div>
+            )}
           </div>
 
           <Separator />
@@ -181,12 +185,14 @@ const ProjectDetailDialog = ({ project, open, onOpenChange }: ProjectDetailDialo
                   {((project.yourBudget / project.totalBudget) * 100).toFixed(1)}%
                 </div>
               </div>
-              <div className="p-3 rounded-lg bg-secondary/50 border border-border">
-                <div className="text-muted-foreground text-xs font-mono mb-1">Rate per Team Member</div>
-                <div className="font-mono font-bold">
-                  {formatCurrency(project.yourBudget / project.teamSize)}
+              {project.rateType && (
+                <div className="p-3 rounded-lg bg-secondary/50 border border-border">
+                  <div className="text-muted-foreground text-xs font-mono mb-1">Rate Type</div>
+                  <div className="font-mono font-bold">
+                    {getLabel(project.rateType, RATE_TYPES)}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

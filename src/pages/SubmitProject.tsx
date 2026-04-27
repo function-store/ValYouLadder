@@ -17,6 +17,9 @@ import {
   EXPERTISE_LEVELS,
   SKILLS,
   COUNTRIES,
+  RATE_TYPES,
+  YOUR_ROLES,
+  CURRENCIES,
 } from "@/lib/projectTypes";
 import { validateDescription, sanitizeDescriptionWithAI } from "@/lib/sanitizeSubmission";
 import VerificationStep from "@/components/submit/VerificationStep";
@@ -26,13 +29,15 @@ const formSchema = z.object({
   projectType: z.string().min(1, "Project type is required"),
   clientType: z.string().min(1, "Client type is required"),
   projectLength: z.string().min(1, "Project length is required"),
-  clientCountry: z.string().min(1, "Client country is required"),
+  clientCountry: z.string().optional(),
   projectLocation: z.string().min(1, "Project location is required"),
   skills: z.array(z.string()).min(1, "Select at least one skill"),
   expertiseLevel: z.string().min(1, "Expertise level is required"),
-  totalBudget: z.number().min(0, "Total budget must be positive"),
+  yourRole: z.string().min(1, "Your role is required"),
+  rateType: z.string().min(1, "Rate type is required"),
+  currency: z.string().min(1, "Currency is required"),
+  totalBudget: z.number().min(0, "Total budget must be positive").optional(),
   yourBudget: z.number().min(0, "Your budget must be positive"),
-  teamSize: z.number().min(1, "Team size must be at least 1"),
   yearCompleted: z.number().min(2000).max(new Date().getFullYear()),
   description: z.string().optional(),
 });
@@ -58,9 +63,11 @@ const SubmitProject = () => {
       projectLocation: "",
       skills: [],
       expertiseLevel: "",
-      totalBudget: 0,
+      yourRole: "",
+      rateType: "",
+      currency: "USD",
+      totalBudget: undefined,
       yourBudget: 0,
-      teamSize: 1,
       yearCompleted: new Date().getFullYear(),
       description: "",
     },
@@ -84,7 +91,7 @@ const SubmitProject = () => {
     if (!isVerified || !privacyConsent) {
       toast({
         title: !isVerified ? "Verification required" : "Consent required",
-        description: !isVerified 
+        description: !isVerified
           ? "Please complete the verification step first."
           : "Please agree to the privacy policy before submitting.",
         variant: "destructive",
@@ -93,25 +100,24 @@ const SubmitProject = () => {
     }
 
     setIsSubmitting(true);
-    
+
     try {
-      // AI-powered sanitization of description
       const { sanitized, redactions } = await sanitizeDescriptionWithAI(data.description);
-      
+
       const sanitizedData = {
         ...data,
         description: sanitized,
       };
-      
+
       console.log("Form submitted:", sanitizedData);
       if (redactions.length > 0) {
         console.log("Redacted items:", redactions);
       }
       // TODO: Submit to database
-      
+
       toast({
         title: "Project submitted!",
-        description: redactions.length > 0 
+        description: redactions.length > 0
           ? `Thank you! ${redactions.length} identifying item(s) were automatically redacted.`
           : "Thank you for contributing to the community.",
       });
@@ -171,7 +177,7 @@ const SubmitProject = () => {
             {/* Project Details */}
             <div className="node-card rounded-xl p-6 border border-border space-y-6">
               <h2 className="font-mono font-semibold text-lg border-b border-border pb-3">Project Details</h2>
-              
+
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="projectType">Type of Project *</Label>
@@ -212,10 +218,10 @@ const SubmitProject = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="projectLength">Project Length *</Label>
+                  <Label htmlFor="projectLength">Project Duration *</Label>
                   <Select onValueChange={(v) => form.setValue("projectLength", v)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select length" />
+                      <SelectValue placeholder="Select duration" />
                     </SelectTrigger>
                     <SelectContent>
                       {PROJECT_LENGTHS.map((length) => (
@@ -245,13 +251,13 @@ const SubmitProject = () => {
             {/* Location */}
             <div className="node-card rounded-xl p-6 border border-border space-y-6">
               <h2 className="font-mono font-semibold text-lg border-b border-border pb-3">Location</h2>
-              
+
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="clientCountry">Client Origin (Country) *</Label>
-                  <Select onValueChange={(v) => form.setValue("clientCountry", v)}>
+                  <Label htmlFor="projectLocation">Project Location *</Label>
+                  <Select onValueChange={(v) => form.setValue("projectLocation", v)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select country" />
+                      <SelectValue placeholder="Where was the project?" />
                     </SelectTrigger>
                     <SelectContent>
                       {COUNTRIES.map((country) => (
@@ -261,13 +267,16 @@ const SubmitProject = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  {form.formState.errors.projectLocation && (
+                    <p className="text-sm text-destructive">{form.formState.errors.projectLocation.message}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="projectLocation">Project Location *</Label>
-                  <Select onValueChange={(v) => form.setValue("projectLocation", v)}>
+                  <Label htmlFor="clientCountry">Client Origin <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Select onValueChange={(v) => form.setValue("clientCountry", v)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select location" />
+                      <SelectValue placeholder="Where is the client from?" />
                     </SelectTrigger>
                     <SelectContent>
                       {COUNTRIES.map((country) => (
@@ -281,10 +290,10 @@ const SubmitProject = () => {
               </div>
             </div>
 
-            {/* Skills */}
+            {/* Skills & Expertise */}
             <div className="node-card rounded-xl p-6 border border-border space-y-6">
               <h2 className="font-mono font-semibold text-lg border-b border-border pb-3">Skills & Expertise</h2>
-              
+
               <div className="space-y-4">
                 <Label>Skills Used *</Label>
                 <div className="flex flex-wrap gap-2">
@@ -323,15 +332,28 @@ const SubmitProject = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  {form.formState.errors.expertiseLevel && (
+                    <p className="text-sm text-destructive">{form.formState.errors.expertiseLevel.message}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="teamSize">Team Size</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    {...form.register("teamSize", { valueAsNumber: true })}
-                  />
+                  <Label htmlFor="yourRole">Your Role *</Label>
+                  <Select onValueChange={(v) => form.setValue("yourRole", v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {YOUR_ROLES.map((role) => (
+                        <SelectItem key={role.value} value={role.value}>
+                          {role.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {form.formState.errors.yourRole && (
+                    <p className="text-sm text-destructive">{form.formState.errors.yourRole.message}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -339,28 +361,68 @@ const SubmitProject = () => {
             {/* Budget */}
             <div className="node-card rounded-xl p-6 border border-border space-y-6">
               <h2 className="font-mono font-semibold text-lg border-b border-border pb-3">Budget</h2>
-              
+
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="totalBudget">Total Production Budget ($) *</Label>
+                  <Label htmlFor="rateType">How Were You Paid? *</Label>
+                  <Select onValueChange={(v) => form.setValue("rateType", v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select rate type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {RATE_TYPES.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {form.formState.errors.rateType && (
+                    <p className="text-sm text-destructive">{form.formState.errors.rateType.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="currency">Currency *</Label>
+                  <Select
+                    defaultValue="USD"
+                    onValueChange={(v) => form.setValue("currency", v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CURRENCIES.map((currency) => (
+                        <SelectItem key={currency} value={currency}>
+                          {currency}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="totalBudget">Total Production Budget</Label>
                   <Input
                     type="number"
                     min={0}
                     placeholder="e.g. 50000"
-                    {...form.register("totalBudget", { valueAsNumber: true })}
+                    {...form.register("totalBudget", { setValueAs: (v) => v === "" || v === undefined ? undefined : Number(v) })}
                   />
-                  <p className="text-xs text-muted-foreground">The entire project budget including all costs</p>
+                  <p className="text-xs text-muted-foreground">Optional — if you know the full project budget</p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="yourBudget">Your Fee / Budget ($) *</Label>
+                  <Label htmlFor="yourBudget">Your Fee / Budget *</Label>
                   <Input
                     type="number"
                     min={0}
                     placeholder="e.g. 15000"
                     {...form.register("yourBudget", { valueAsNumber: true })}
                   />
-                  <p className="text-xs text-muted-foreground">What you received for your work</p>
+                  <p className="text-xs text-muted-foreground">What you personally received</p>
                 </div>
               </div>
             </div>
@@ -409,10 +471,10 @@ const SubmitProject = () => {
               </div>
             )}
 
-            <Button 
-              type="submit" 
-              variant="glow" 
-              size="xl" 
+            <Button
+              type="submit"
+              variant="glow"
+              size="xl"
               className="w-full gap-2"
               disabled={!isVerified || !privacyConsent || isSubmitting}
             >

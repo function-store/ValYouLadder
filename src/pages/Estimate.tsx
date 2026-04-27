@@ -26,13 +26,15 @@ interface DatabaseProject {
   project_type: string;
   client_type: string;
   project_length: string;
-  client_country: string;
+  client_country: string | null;
   project_location: string;
   skills: string[];
   expertise_level: string;
-  total_budget: number;
+  total_budget: number | null;
   your_budget: number;
-  team_size: number;
+  currency: string;
+  rate_type: string | null;
+  your_role: string | null;
   year_completed: number;
   description: string | null;
 }
@@ -43,6 +45,7 @@ const Estimate = () => {
   const [clientType, setClientType] = useState("");
   const [projectLength, setProjectLength] = useState("");
   const [expertiseLevel, setExpertiseLevel] = useState("");
+  const [yourRole, setYourRole] = useState("");
   const [clientCountry, setClientCountry] = useState("");
   const [projectLocation, setProjectLocation] = useState("");
   const [useAI, setUseAI] = useState(false);
@@ -71,8 +74,8 @@ const Estimate = () => {
 
   /**
    * Calculate similarity score between user input and a project.
-   * Uses IDF-weighted skill overlap so rare skills matter more (Finding 4).
-   * Recency scoring increased to +8/+5/+2 tapering (Finding 6).
+   * Uses IDF-weighted skill overlap so rare skills matter more.
+   * yourRole match added as a similarity signal.
    */
   const calculateSimilarityScore = (
     project: DatabaseProject,
@@ -80,17 +83,16 @@ const Estimate = () => {
   ): number => {
     let score = 0;
 
-    // Exact matches (higher weight for stronger relevance signals)
     if (project.project_type === projectType) score += 20;
     if (project.client_type === clientType) score += 25;
     if (project.expertise_level === expertiseLevel) score += 15;
     if (project.project_length === projectLength) score += 10;
+    if (project.your_role && yourRole && project.your_role === yourRole) score += 10;
 
-    // Location matches
     if (project.project_location === projectLocation) score += 10;
-    if (project.client_country === clientCountry) score += 5;
+    if (project.client_country && clientCountry && project.client_country === clientCountry) score += 5;
 
-    // IDF-weighted skill overlap — rare skills carry more signal than common ones (Finding 4)
+    // IDF-weighted skill overlap — rare skills carry more signal
     if (selectedSkills.length > 0) {
       const projectSkills = new Set(project.skills);
       let matchingIdfSum = 0;
@@ -104,7 +106,6 @@ const Estimate = () => {
         }
       }
 
-      // Fallback: if all selected skills have 0 IDF (not found in pool), use simple ratio
       const skillScore =
         totalIdfSum > 0
           ? matchingIdfSum / totalIdfSum
@@ -116,7 +117,7 @@ const Estimate = () => {
       score += skillScore * 30;
     }
 
-    // Recency bonus — increased to +8/+5/+2 tapering to better reflect relevance decay (Finding 6)
+    // Recency bonus — tapering +8/+5/+2
     const currentYear = new Date().getFullYear();
     const yearsAgo = currentYear - project.year_completed;
     if (yearsAgo === 0) score += 8;
@@ -127,15 +128,12 @@ const Estimate = () => {
   };
 
   /**
-   * Fetch candidate projects, score them, filter by threshold, and return ranked matches.
-   * Pool size increased to 500 to improve recall for niche skills (Finding 7).
-   * Projects below MIN_SIMILARITY_THRESHOLD are excluded (Finding 2).
+   * Fetch candidate projects, score, filter by threshold, and return ranked matches.
    */
   const fetchSimilarProjects = async (): Promise<{
     projects: SimilarProject[];
     weights: number[];
   }> => {
-    // Fetch up to 500 candidates — wider pool improves recall for niche skills (Finding 7)
     const { data, error } = await supabase
       .from("project_submissions")
       .select("*")
@@ -151,23 +149,19 @@ const Estimate = () => {
       return { projects: [], weights: [] };
     }
 
-    // Compute skill IDF from the full candidate pool (Finding 4)
     const skillIdf = computeSkillIdf(data as DatabaseProject[]);
 
-    // Score and sort projects by similarity
     const scoredProjects = (data as DatabaseProject[]).map((project) => ({
       project,
       score: calculateSimilarityScore(project, skillIdf),
     }));
 
-    // Exclude projects below the minimum similarity threshold (Finding 2)
     const qualifiedProjects = scoredProjects.filter(
       (sp) => sp.score >= MIN_SIMILARITY_THRESHOLD
     );
 
     qualifiedProjects.sort((a, b) => b.score - a.score);
 
-    // Take top matches (up to 50 to give weighted percentile more material)
     const topMatches = qualifiedProjects.slice(0, 50);
 
     const projects = topMatches.map(({ project, score }) => ({
@@ -181,8 +175,9 @@ const Estimate = () => {
       budget: project.your_budget,
       yearCompleted: project.year_completed,
       description: project.description || undefined,
-      teamSize: project.team_size,
-      clientCountry: project.client_country,
+      clientCountry: project.client_country || undefined,
+      currency: project.currency,
+      yourRole: project.your_role || undefined,
       similarityScore: score,
       effectiveRate: computeEffectiveRate(project),
     }));
@@ -193,19 +188,15 @@ const Estimate = () => {
   };
 
   /**
-   * Normalize budget to a daily effective rate so projects of different lengths are comparable (Finding 3).
+   * Normalize budget to a daily effective rate so projects of different lengths are comparable.
    */
   const computeEffectiveRate = (project: DatabaseProject): number => {
-    const durationDays = DURATION_DAYS[project.project_length] || 15; // default to 2-4 weeks if unknown
+    const durationDays = DURATION_DAYS[project.project_length] || 15;
     return project.your_budget / durationDays;
   };
 
   /**
-   * Calculate estimate from real project data using:
-   * - Budget normalization to daily rate (Finding 3)
-   * - Inflation adjustment for older projects (Finding 6)
-   * - Similarity-weighted percentiles (Finding 1)
-   * - Effective sample size for confidence (Finding 5)
+   * Calculate estimate from real project data using similarity-weighted percentiles.
    */
   const calculateFromRealData = (
     projects: SimilarProject[],
@@ -223,27 +214,22 @@ const Estimate = () => {
     const currentYear = new Date().getFullYear();
     const userDurationDays = DURATION_DAYS[projectLength] || 15;
 
-    // Build weighted items: normalize to daily rate, then inflate older rates to current-year equivalents (Finding 6)
     const weightedItems = projects.map((p, i) => {
       const durationDays = DURATION_DAYS[p.projectLength] || 15;
       const dailyRate = p.budget / durationDays;
-      // Inflate older rates by 5% per year to approximate market rate increases (Finding 6)
       const yearsOld = currentYear - p.yearCompleted;
       const adjustedRate = dailyRate * Math.pow(1 + ANNUAL_INFLATION, yearsOld);
       return { value: adjustedRate, weight: weights[i] };
     });
 
-    // Compute similarity-weighted percentiles on normalized daily rates (Finding 1)
     const low = weightedPercentile(weightedItems, 0.25);
     const mid = weightedPercentile(weightedItems, 0.5);
     const high = weightedPercentile(weightedItems, 0.75);
 
-    // Scale daily rates back to the user's requested project length (Finding 3)
     const scaledLow = low * userDurationDays;
     const scaledMid = mid * userDurationDays;
     const scaledHigh = high * userDurationDays;
 
-    // Compute effective sample size for confidence signal (Finding 5)
     const ess = computeESS(weights);
     const dataConfidence = essToConfidence(ess);
 
@@ -255,7 +241,6 @@ const Estimate = () => {
     };
   };
 
-  // Save estimate to database (anonymous tracking)
   const saveEstimateToDatabase = async (
     estimates: { low: number; mid: number; high: number },
     sampleSize: number,
@@ -270,6 +255,7 @@ const Estimate = () => {
         project_location: projectLocation || null,
         skills: selectedSkills,
         expertise_level: expertiseLevel,
+        your_role: yourRole || null,
         low_estimate: estimates.low,
         mid_estimate: estimates.mid,
         high_estimate: estimates.high,
@@ -277,7 +263,6 @@ const Estimate = () => {
         sample_size: sampleSize,
       });
     } catch (error) {
-      // Silent fail - we don't want to interrupt user experience
       console.error("Failed to save estimate:", error);
     }
   };
@@ -287,7 +272,6 @@ const Estimate = () => {
     setAiInsights(null);
 
     try {
-      // Fetch real similar projects from database (scored, filtered, ranked)
       const { projects: similarProjects, weights } =
         await fetchSimilarProjects();
       const sampleSize = similarProjects.length;
@@ -303,6 +287,7 @@ const Estimate = () => {
                   clientType,
                   projectLength,
                   expertiseLevel,
+                  yourRole,
                   projectLocation,
                   clientCountry,
                   skills: selectedSkills,
@@ -325,7 +310,6 @@ const Estimate = () => {
             high: data.high,
           };
 
-          // Still compute data confidence even when using AI (Finding 5)
           const ess = computeESS(weights);
           const dataConfidence = essToConfidence(ess);
 
@@ -342,7 +326,6 @@ const Estimate = () => {
             keyFactors: data.keyFactors,
           });
 
-          // Save to database
           await saveEstimateToDatabase(estimates, sampleSize, true);
 
           toast.success("AI analysis complete!");
@@ -389,7 +372,6 @@ const Estimate = () => {
           dataConfidence: result.dataConfidence,
         });
 
-        // Show low-confidence warning when ESS is very low (Finding 5)
         if (result.dataConfidence === "low") {
           toast.warning(
             "Very few comparable projects found. This estimate has high uncertainty."
@@ -426,7 +408,6 @@ const Estimate = () => {
     <Layout>
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
-          {/* Header */}
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-6">
               <Sparkles className="h-4 w-4 text-primary" />
@@ -442,7 +423,6 @@ const Estimate = () => {
           </div>
 
           <div className="grid lg:grid-cols-2 gap-8">
-            {/* Input Form */}
             <div className="space-y-6">
               <EstimateForm
                 projectType={projectType}
@@ -453,6 +433,8 @@ const Estimate = () => {
                 setProjectLength={setProjectLength}
                 expertiseLevel={expertiseLevel}
                 setExpertiseLevel={setExpertiseLevel}
+                yourRole={yourRole}
+                setYourRole={setYourRole}
                 clientCountry={clientCountry}
                 setClientCountry={setClientCountry}
                 projectLocation={projectLocation}
@@ -463,7 +445,6 @@ const Estimate = () => {
                 setDescription={setDescription}
               />
 
-              {/* AI Toggle */}
               <div className="flex items-center space-x-3 p-4 rounded-lg bg-secondary/50 border border-border">
                 <Checkbox
                   id="use-ai"
@@ -484,7 +465,6 @@ const Estimate = () => {
                 </div>
               </div>
 
-              {/* Privacy Consent */}
               <PrivacyConsentCheckbox
                 checked={privacyConsent}
                 onCheckedChange={setPrivacyConsent}
@@ -513,7 +493,6 @@ const Estimate = () => {
               </Button>
             </div>
 
-            {/* Results */}
             <EstimateResults
               estimate={estimate}
               formatCurrency={formatCurrency}

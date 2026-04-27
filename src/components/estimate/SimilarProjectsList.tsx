@@ -39,8 +39,9 @@ export interface SimilarProject {
   budget: number;
   yearCompleted: number;
   description?: string;
-  teamSize?: number;
   clientCountry?: string;
+  currency?: string;
+  yourRole?: string;
   /** Similarity score used for ranking and weighted percentile calculation */
   similarityScore?: number;
   /** Budget normalized to a daily effective rate */
@@ -208,10 +209,10 @@ const SimilarProjectsList = ({ projects, formatCurrency }: SimilarProjectsListPr
                   <Calendar className="h-4 w-4 text-primary" />
                   <span>{selectedProject.yearCompleted}</span>
                 </div>
-                {selectedProject.teamSize && (
+                {selectedProject.yourRole && (
                   <div className="flex items-center gap-2">
                     <Users className="h-4 w-4 text-primary" />
-                    <span>{selectedProject.teamSize} team members</span>
+                    <span>{selectedProject.yourRole}</span>
                   </div>
                 )}
               </div>

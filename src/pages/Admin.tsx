@@ -45,13 +45,15 @@ interface ProjectSubmission {
   project_type: string;
   client_type: string;
   project_length: string;
-  client_country: string;
+  client_country: string | null;
   project_location: string;
   skills: string[];
   expertise_level: string;
-  total_budget: number;
+  total_budget: number | null;
   your_budget: number;
-  team_size: number;
+  currency: string;
+  rate_type: string | null;
+  your_role: string | null;
   year_completed: number;
   description: string | null;
   created_at: string;
@@ -171,7 +173,9 @@ const Admin = () => {
           expertise_level: updated.expertise_level,
           total_budget: updated.total_budget,
           your_budget: updated.your_budget,
-          team_size: updated.team_size,
+          currency: updated.currency,
+          rate_type: updated.rate_type,
+          your_role: updated.your_role,
           year_completed: updated.year_completed,
           description: updated.description,
         })

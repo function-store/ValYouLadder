@@ -25,6 +25,9 @@ import {
   EXPERTISE_LEVELS,
   SKILLS,
   COUNTRIES,
+  RATE_TYPES,
+  YOUR_ROLES,
+  CURRENCIES,
 } from "@/lib/projectTypes";
 import { X } from "lucide-react";
 
@@ -33,13 +36,15 @@ interface ProjectSubmission {
   project_type: string;
   client_type: string;
   project_length: string;
-  client_country: string;
+  client_country: string | null;
   project_location: string;
   skills: string[];
   expertise_level: string;
-  total_budget: number;
+  total_budget: number | null;
   your_budget: number;
-  team_size: number;
+  currency: string;
+  rate_type: string | null;
+  your_role: string | null;
   year_completed: number;
   description: string | null;
   created_at: string;
@@ -125,7 +130,7 @@ const AdminEditDialog = ({
             </div>
 
             <div className="space-y-2">
-              <Label>Project Length</Label>
+              <Label>Project Duration</Label>
               <Select
                 value={formData.project_length}
                 onValueChange={(value) =>
@@ -167,20 +172,41 @@ const AdminEditDialog = ({
             </div>
 
             <div className="space-y-2">
-              <Label>Client Country</Label>
+              <Label>Your Role</Label>
               <Select
-                value={formData.client_country}
+                value={formData.your_role || ""}
                 onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, client_country: value }))
+                  setFormData((prev) => ({ ...prev, your_role: value || null }))
                 }
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
-                  {COUNTRIES.map((country) => (
-                    <SelectItem key={country} value={country}>
-                      {country}
+                  {YOUR_ROLES.map((role) => (
+                    <SelectItem key={role.value} value={role.value}>
+                      {role.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Rate Type</Label>
+              <Select
+                value={formData.rate_type || ""}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, rate_type: value || null }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select rate type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {RATE_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -209,6 +235,62 @@ const AdminEditDialog = ({
             </div>
 
             <div className="space-y-2">
+              <Label>Client Origin <span className="text-muted-foreground font-normal text-xs">(optional)</span></Label>
+              <Select
+                value={formData.client_country || ""}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, client_country: value || null }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select country" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COUNTRIES.map((country) => (
+                    <SelectItem key={country} value={country}>
+                      {country}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Currency</Label>
+              <Select
+                value={formData.currency || "USD"}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, currency: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CURRENCIES.map((currency) => (
+                    <SelectItem key={currency} value={currency}>
+                      {currency}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Year Completed</Label>
+              <Input
+                type="number"
+                value={formData.year_completed}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    year_completed: parseInt(e.target.value) || new Date().getFullYear(),
+                  }))
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label>Your Budget</Label>
               <Input
                 type="number"
@@ -223,42 +305,14 @@ const AdminEditDialog = ({
             </div>
 
             <div className="space-y-2">
-              <Label>Total Budget</Label>
+              <Label>Total Budget (optional)</Label>
               <Input
                 type="number"
-                value={formData.total_budget}
+                value={formData.total_budget ?? ""}
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    total_budget: parseInt(e.target.value) || 0,
-                  }))
-                }
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Team Size</Label>
-              <Input
-                type="number"
-                value={formData.team_size}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    team_size: parseInt(e.target.value) || 1,
-                  }))
-                }
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Year Completed</Label>
-              <Input
-                type="number"
-                value={formData.year_completed}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    year_completed: parseInt(e.target.value) || new Date().getFullYear(),
+                    total_budget: e.target.value === "" ? null : parseInt(e.target.value) || 0,
                   }))
                 }
               />

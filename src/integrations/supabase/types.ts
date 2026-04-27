@@ -19,6 +19,7 @@ export type Database = {
           client_country: string | null
           client_type: string
           created_at: string
+          currency: string | null
           expertise_level: string
           high_estimate: number
           id: string
@@ -27,14 +28,17 @@ export type Database = {
           project_length: string
           project_location: string | null
           project_type: string
+          rate_type: string | null
           sample_size: number
           skills: string[]
           used_ai: boolean
+          your_role: string | null
         }
         Insert: {
           client_country?: string | null
           client_type: string
           created_at?: string
+          currency?: string | null
           expertise_level: string
           high_estimate: number
           id?: string
@@ -43,14 +47,17 @@ export type Database = {
           project_length: string
           project_location?: string | null
           project_type: string
+          rate_type?: string | null
           sample_size?: number
           skills?: string[]
           used_ai?: boolean
+          your_role?: string | null
         }
         Update: {
           client_country?: string | null
           client_type?: string
           created_at?: string
+          currency?: string | null
           expertise_level?: string
           high_estimate?: number
           id?: string
@@ -59,60 +66,68 @@ export type Database = {
           project_length?: string
           project_location?: string | null
           project_type?: string
+          rate_type?: string | null
           sample_size?: number
           skills?: string[]
           used_ai?: boolean
+          your_role?: string | null
         }
         Relationships: []
       }
       project_submissions: {
         Row: {
-          client_country: string
+          client_country: string | null
           client_type: string
           created_at: string
+          currency: string
           description: string | null
           expertise_level: string
           id: string
           project_length: string
           project_location: string
           project_type: string
+          rate_type: string | null
           skills: string[]
-          team_size: number
-          total_budget: number
+          total_budget: number | null
           year_completed: number
           your_budget: number
+          your_role: string | null
         }
         Insert: {
-          client_country: string
+          client_country?: string | null
           client_type: string
           created_at?: string
+          currency?: string
           description?: string | null
           expertise_level: string
           id?: string
           project_length: string
           project_location: string
           project_type: string
+          rate_type?: string | null
           skills?: string[]
-          team_size?: number
-          total_budget: number
+          total_budget?: number | null
           year_completed: number
           your_budget: number
+          your_role?: string | null
         }
         Update: {
-          client_country?: string
+          client_country?: string | null
           client_type?: string
           created_at?: string
+          currency?: string
           description?: string | null
           expertise_level?: string
           id?: string
           project_length?: string
           project_location?: string
           project_type?: string
+          rate_type?: string | null
           skills?: string[]
-          team_size?: number
           total_budget?: number
           year_completed?: number
           your_budget?: number
+          your_role?: string | null
         }
         Relationships: []
       }

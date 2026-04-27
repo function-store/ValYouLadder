@@ -53,13 +53,15 @@ const Database = () => {
               projectType: row.project_type,
               clientType: row.client_type,
               projectLength: row.project_length,
-              clientCountry: row.client_country,
+              clientCountry: row.client_country ?? undefined,
               projectLocation: row.project_location,
               skills: row.skills || [],
               expertiseLevel: row.expertise_level,
-              totalBudget: row.total_budget,
+              totalBudget: row.total_budget ?? undefined,
               yourBudget: row.your_budget,
-              teamSize: row.team_size,
+              currency: row.currency,
+              rateType: row.rate_type ?? undefined,
+              yourRole: row.your_role ?? undefined,
               yearCompleted: row.year_completed,
               description: row.description ?? undefined,
             }))
@@ -102,13 +104,13 @@ const Database = () => {
         (p) =>
           p.skills.some((s) => s.toLowerCase().includes(term)) ||
           p.description?.toLowerCase().includes(term) ||
-          p.clientCountry.toLowerCase().includes(term)
+          p.clientCountry?.toLowerCase().includes(term)
       );
     }
 
     data.sort((a, b) => {
-      const aVal = a[sortBy];
-      const bVal = b[sortBy];
+      const aVal = a[sortBy] ?? 0;
+      const bVal = b[sortBy] ?? 0;
       if (sortOrder === "asc") return (aVal as number) - (bVal as number);
       return (bVal as number) - (aVal as number);
     });
@@ -280,8 +282,8 @@ const Database = () => {
                     </div>
 
                     <div className="flex flex-wrap gap-4 text-xs text-muted-foreground pt-2 border-t border-border">
-                      <span>Total budget: {formatCurrency(project.totalBudget)}</span>
-                      <span>Team: {project.teamSize} {project.teamSize === 1 ? "person" : "people"}</span>
+                      {project.totalBudget != null && <span>Total budget: {formatCurrency(project.totalBudget)}</span>}
+                      {project.yourRole && <span>Role: {project.yourRole}</span>}
                       <span>Experience: {getLabel(project.expertiseLevel, EXPERTISE_LEVELS)}</span>
                       <span>Location: {project.projectLocation}</span>
                     </div>

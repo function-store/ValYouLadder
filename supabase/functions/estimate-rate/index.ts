@@ -15,9 +15,9 @@ serve(async (req) => {
   try {
     const { projectDetails, similarProjects } = await req.json();
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is not configured");
     }
 
     const systemPrompt = `You are an expert rate estimation assistant for creative technology projects (TouchDesigner, Notch, projection mapping, LED installations, live visuals, etc.).
@@ -29,6 +29,7 @@ IMPORTANT CONTEXT about the data you receive:
 - Projects are ranked by a weighted similarity score that uses IDF-weighted skill overlap (rare skills count more), exact field matches, and recency.
 - Budgets shown are the respondent's share (your_budget). The client-side algorithm normalizes these to daily rates for percentile calculation, but you see raw totals.
 - Each project includes a similarityScore field — higher scores indicate stronger relevance. Weight your analysis accordingly.
+- Budgets in similar projects may be in different currencies. Adjust your reasoning accordingly.
 
 Your response must be valid JSON with this exact structure:
 {
@@ -47,7 +48,9 @@ Consider these factors:
 - Market rates for the location
 - Skills required and their rarity
 - Similar project budgets in the data (weighted by similarity score)
-- Project length when comparing budgets (a 6-month project budget is not comparable to a 1-day gig)`;
+- Project length when comparing budgets (a 6-month project budget is not comparable to a 1-day gig)
+- Rate structure: a day rate vs project fee vs retainer implies different total value
+- Role: solo operators carry full project risk; subcontractors typically earn less than leads`;
 
     const userPrompt = `Project Details:
 - Type: ${projectDetails.projectType}
@@ -55,7 +58,9 @@ Consider these factors:
 - Project Length: ${projectDetails.projectLength}
 - Expertise Level: ${projectDetails.expertiseLevel}
 - Location: ${projectDetails.projectLocation}
-- Client Country: ${projectDetails.clientCountry}
+${projectDetails.clientCountry ? `- Client Country: ${projectDetails.clientCountry}` : ""}
+${projectDetails.rateType ? `- Rate Structure: ${projectDetails.rateType}` : ""}
+${projectDetails.yourRole ? `- Your Role: ${projectDetails.yourRole}` : ""}
 - Skills Required: ${projectDetails.skills.join(", ")}
 ${projectDetails.description ? `\nProject Description:\n${projectDetails.description}` : ""}
 
@@ -64,27 +69,24 @@ ${similarProjects
   .slice(0, 10)
   .map(
     (p: any, i: number) =>
-      `${i + 1}. [score:${p.similarityScore?.toFixed(1) ?? "N/A"}] ${p.projectType} for ${p.clientType} in ${p.location} - $${p.budget} (${p.expertiseLevel}, ${p.projectLength})`
+      `${i + 1}. [score:${p.similarityScore?.toFixed(1) ?? "N/A"}] ${p.projectType} for ${p.clientType} in ${p.location} - ${p.currency ?? "USD"} ${p.budget} (${p.expertiseLevel}, ${p.projectLength}${p.yourRole ? `, ${p.yourRole}` : ""})`
   )
   .join("\n")}
 
-Based on this data, provide your rate estimate.`;
+Based on this data, provide your rate estimate in USD.`;
 
     const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt },
-          ],
-          temperature: 0.3,
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+          generationConfig: {
+            temperature: 0.3,
+            responseMimeType: "application/json",
+          },
         }),
       }
     );
@@ -99,22 +101,13 @@ Based on this data, provide your rate estimate.`;
           }
         );
       }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Payment required, please add credits." }),
-          {
-            status: 402,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
       const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      throw new Error(`AI gateway error: ${response.status}`);
+      console.error("Gemini API error:", response.status, errorText);
+      throw new Error(`Gemini API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!content) {
       throw new Error("No content in AI response");
