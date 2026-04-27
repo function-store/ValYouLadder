@@ -1,4 +1,4 @@
-import { TrendingUp, Users, Calendar, Sparkles, Brain, Lightbulb } from "lucide-react";
+import { TrendingUp, Users, Calendar, Sparkles, Brain, Lightbulb, ShieldCheck } from "lucide-react";
 import SimilarProjectsList, { SimilarProject } from "./SimilarProjectsList";
 import { Badge } from "@/components/ui/badge";
 
@@ -9,6 +9,7 @@ interface EstimateResultsProps {
     high: number;
     sampleSize: number;
     similarProjects: SimilarProject[];
+    dataConfidence?: "high" | "medium" | "low";
   } | null;
   formatCurrency: (amount: number) => string;
   aiInsights?: {
@@ -128,9 +129,29 @@ const EstimateResults = ({ estimate, formatCurrency, aiInsights }: EstimateResul
           </div>
           <div className="flex items-center gap-3 text-sm">
             <Calendar className="h-4 w-4 text-primary" />
-            <span>2023-2024 data</span>
+            <span>Community data</span>
           </div>
         </div>
+
+        {/* Data confidence indicator based on effective sample size */}
+        {estimate.dataConfidence && (
+          <div className="flex items-center gap-2 pt-2">
+            <ShieldCheck className="h-4 w-4 text-primary" />
+            <span className="text-sm text-muted-foreground">Data confidence:</span>
+            <Badge
+              variant={
+                estimate.dataConfidence === "high"
+                  ? "default"
+                  : estimate.dataConfidence === "medium"
+                  ? "secondary"
+                  : "outline"
+              }
+              className="font-mono text-xs"
+            >
+              {estimate.dataConfidence}
+            </Badge>
+          </div>
+        )}
 
         <div className="pt-3 border-t border-border">
           <SimilarProjectsList

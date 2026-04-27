@@ -41,6 +41,10 @@ export interface SimilarProject {
   description?: string;
   teamSize?: number;
   clientCountry?: string;
+  /** Similarity score used for ranking and weighted percentile calculation */
+  similarityScore?: number;
+  /** Budget normalized to a daily effective rate */
+  effectiveRate?: number;
 }
 
 interface SimilarProjectsListProps {

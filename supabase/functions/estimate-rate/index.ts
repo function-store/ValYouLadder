@@ -24,6 +24,12 @@ serve(async (req) => {
 
 Given project details and a list of similar past projects, analyze the data and provide a rate estimate.
 
+IMPORTANT CONTEXT about the data you receive:
+- Similar projects have been pre-filtered by a minimum similarity threshold (score >= 15) so low-relevance matches are already excluded.
+- Projects are ranked by a weighted similarity score that uses IDF-weighted skill overlap (rare skills count more), exact field matches, and recency.
+- Budgets shown are the respondent's share (your_budget). The client-side algorithm normalizes these to daily rates for percentile calculation, but you see raw totals.
+- Each project includes a similarityScore field — higher scores indicate stronger relevance. Weight your analysis accordingly.
+
 Your response must be valid JSON with this exact structure:
 {
   "low": number (conservative estimate in USD),
@@ -40,7 +46,8 @@ Consider these factors:
 - Required expertise level
 - Market rates for the location
 - Skills required and their rarity
-- Similar project budgets in the data`;
+- Similar project budgets in the data (weighted by similarity score)
+- Project length when comparing budgets (a 6-month project budget is not comparable to a 1-day gig)`;
 
     const userPrompt = `Project Details:
 - Type: ${projectDetails.projectType}
@@ -52,12 +59,12 @@ Consider these factors:
 - Skills Required: ${projectDetails.skills.join(", ")}
 ${projectDetails.description ? `\nProject Description:\n${projectDetails.description}` : ""}
 
-Similar Projects (${similarProjects.length} found):
+Similar Projects (${similarProjects.length} found, pre-filtered by similarity threshold, ranked by weighted score):
 ${similarProjects
   .slice(0, 10)
   .map(
     (p: any, i: number) =>
-      `${i + 1}. ${p.projectType} for ${p.clientType} in ${p.location} - $${p.budget} (${p.expertiseLevel})`
+      `${i + 1}. [score:${p.similarityScore?.toFixed(1) ?? "N/A"}] ${p.projectType} for ${p.clientType} in ${p.location} - $${p.budget} (${p.expertiseLevel}, ${p.projectLength})`
   )
   .join("\n")}
 
