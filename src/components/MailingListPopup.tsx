@@ -83,7 +83,10 @@ const MailingListPopup = () => {
             <DialogTitle>Stay in the loop</DialogTitle>
           </div>
           <DialogDescription>
-            Get notified when we add new features, data insights, or industry benchmarks. No spam — just updates that matter.
+            Get notified when we add new features, data insights, or industry benchmarks. No spam — just updates that matter.{" "}
+            <a href="/unsubscribe" className="underline hover:text-foreground transition-colors">
+              Unsubscribe any time.
+            </a>
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex gap-2 mt-2">

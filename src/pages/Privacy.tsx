@@ -2,8 +2,8 @@ import Layout from "@/components/layout/Layout";
 import { Shield, Mail } from "lucide-react";
 
 const Privacy = () => {
-  const lastUpdated = "January 30, 2026";
-  const contactEmail = "privacy@example.com"; // Update with your email
+  const lastUpdated = "April 28, 2026";
+  const contactEmail = "privacy@example.com"; // TODO: replace with your actual email
 
   return (
     <Layout>
@@ -27,9 +27,9 @@ const Privacy = () => {
             <section className="node-card rounded-xl p-6 border border-border">
               <h2 className="text-xl font-semibold mb-4">1. Introduction</h2>
               <p className="text-muted-foreground">
-                We are committed to protecting your privacy and ensuring compliance with the 
-                General Data Protection Regulation (GDPR). This Privacy Policy explains how we 
-                collect, use, and protect your personal data when you use our rate estimation 
+                We are committed to protecting your privacy and ensuring compliance with the
+                General Data Protection Regulation (GDPR). This Privacy Policy explains how we
+                collect, use, and protect your personal data when you use our rate estimation
                 and project database platform.
               </p>
             </section>
@@ -40,21 +40,30 @@ const Privacy = () => {
                 <p>We collect and process the following types of data:</p>
                 <ul className="list-disc list-inside space-y-2">
                   <li>
-                    <strong className="text-foreground">Project Submissions:</strong> Project type, 
-                    client type, budget information, skills, expertise level, and location data. 
-                    We do not collect personally identifiable information in submissions.
+                    <strong className="text-foreground">Project Submissions:</strong> Project
+                    type, client type, budget information, skills, expertise level, role, rate
+                    type, currency, and location. Submissions contain no personally identifiable
+                    information — no name, email address, IP address, or account identifier is
+                    stored or linked to a submission at any point.
                   </li>
                   <li>
-                    <strong className="text-foreground">Estimate Requests:</strong> Project parameters 
-                    you enter when requesting rate estimates, along with the generated results.
+                    <strong className="text-foreground">Estimate Requests:</strong> Project
+                    parameters you enter when requesting rate estimates, along with the generated
+                    results. These are stored anonymously with no link to your identity.
                   </li>
                   <li>
-                    <strong className="text-foreground">Account Information:</strong> If you create an 
-                    admin account, we store your email address and encrypted password.
+                    <strong className="text-foreground">Mailing List:</strong> If you voluntarily
+                    subscribe via our sign-up form, we store your email address for the sole
+                    purpose of sending product updates. You can unsubscribe and have your email
+                    permanently deleted at any time.
                   </li>
                   <li>
-                    <strong className="text-foreground">Technical Data:</strong> Browser type, device 
-                    information, and anonymized usage analytics for improving our service.
+                    <strong className="text-foreground">Account Information:</strong> If you
+                    create an admin account, we store your email address and encrypted password.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Technical Data:</strong> Browser type,
+                    device information, and anonymized usage analytics for improving our service.
                   </li>
                 </ul>
               </div>
@@ -68,6 +77,7 @@ const Privacy = () => {
                   <li>Providing accurate rate estimates based on aggregated market data</li>
                   <li>Building and maintaining an anonymous project rate database</li>
                   <li>Improving our estimation algorithms and user experience</li>
+                  <li>Sending product updates to mailing list subscribers (with consent)</li>
                   <li>Authenticating admin users for platform management</li>
                 </ul>
               </div>
@@ -79,16 +89,18 @@ const Privacy = () => {
                 <p>We process your data based on:</p>
                 <ul className="list-disc list-inside space-y-2">
                   <li>
-                    <strong className="text-foreground">Consent:</strong> You explicitly consent to 
-                    data collection when submitting projects or requesting estimates.
+                    <strong className="text-foreground">Consent:</strong> You explicitly consent
+                    to data collection when submitting projects, requesting estimates, or
+                    subscribing to our mailing list. Mailing list consent can be withdrawn at
+                    any time.
                   </li>
                   <li>
-                    <strong className="text-foreground">Legitimate Interest:</strong> We analyze 
+                    <strong className="text-foreground">Legitimate Interest:</strong> We analyze
                     anonymized data to improve our services and provide market insights.
                   </li>
                   <li>
-                    <strong className="text-foreground">Contract:</strong> Processing is necessary 
-                    for providing the services you request.
+                    <strong className="text-foreground">Contract:</strong> Processing is
+                    necessary for providing the services you request.
                   </li>
                 </ul>
               </div>
@@ -96,38 +108,73 @@ const Privacy = () => {
 
             <section className="node-card rounded-xl p-6 border border-border">
               <h2 className="text-xl font-semibold mb-4">5. Data Retention</h2>
-              <p className="text-muted-foreground">
-                Project submissions and estimate data are retained indefinitely as part of our 
-                anonymous market database. Admin account data is retained until you request 
-                deletion. Technical logs are automatically deleted after 90 days.
-              </p>
+              <div className="text-muted-foreground space-y-3">
+                <p>
+                  <strong className="text-foreground">Project submissions and estimates</strong>{" "}
+                  are retained indefinitely as part of the anonymous market database. Because
+                  they contain no personal identifiers, they are not subject to individual
+                  retention limits under GDPR.
+                </p>
+                <p>
+                  <strong className="text-foreground">Mailing list email addresses</strong> are
+                  retained until you unsubscribe. Deletion is immediate and permanent.
+                </p>
+                <p>
+                  <strong className="text-foreground">Admin account data</strong> is retained
+                  until the account is deleted. Technical logs are automatically deleted after
+                  90 days.
+                </p>
+              </div>
             </section>
 
             <section className="node-card rounded-xl p-6 border border-border">
               <h2 className="text-xl font-semibold mb-4">6. Your Rights Under GDPR</h2>
               <div className="text-muted-foreground space-y-4">
                 <p>You have the following rights regarding your personal data:</p>
-                <ul className="list-disc list-inside space-y-2">
+                <ul className="list-disc list-inside space-y-3">
                   <li>
-                    <strong className="text-foreground">Right to Access:</strong> Request a copy 
+                    <strong className="text-foreground">Right to Access:</strong> Request a copy
                     of the personal data we hold about you.
                   </li>
                   <li>
-                    <strong className="text-foreground">Right to Rectification:</strong> Request 
+                    <strong className="text-foreground">Right to Rectification:</strong> Request
                     correction of inaccurate personal data.
                   </li>
                   <li>
-                    <strong className="text-foreground">Right to Erasure:</strong> Request deletion 
-                    of your personal data (note: anonymous submissions cannot be traced to 
-                    individuals).
+                    <strong className="text-foreground">Right to Erasure:</strong>{" "}
+                    <span className="block mt-1 ml-4 space-y-1">
+                      <span className="block">
+                        <strong className="text-foreground">Mailing list:</strong> You can
+                        delete your email address instantly and permanently at{" "}
+                        <a
+                          href="/unsubscribe"
+                          className="text-primary hover:underline"
+                        >
+                          creative-cost-compass.vercel.app/unsubscribe
+                        </a>
+                        .
+                      </span>
+                      <span className="block">
+                        <strong className="text-foreground">Project submissions:</strong>{" "}
+                        Anonymous submissions are not personal data under GDPR Art. 4 — they
+                        contain no name, email, IP address, or any identifier that could be
+                        linked to you. The right to erasure does not apply to data that cannot
+                        be attributed to a natural person.
+                      </span>
+                      <span className="block">
+                        <strong className="text-foreground">Admin accounts:</strong> Contact us
+                        to request account deletion.
+                      </span>
+                    </span>
                   </li>
                   <li>
-                    <strong className="text-foreground">Right to Object:</strong> Object to 
-                    processing of your personal data.
+                    <strong className="text-foreground">Right to Object:</strong> Object to
+                    processing of your personal data. For mailing list emails, use the
+                    unsubscribe link above.
                   </li>
                   <li>
-                    <strong className="text-foreground">Right to Data Portability:</strong> Request 
-                    your data in a portable format.
+                    <strong className="text-foreground">Right to Data Portability:</strong>{" "}
+                    Request your data in a portable format by contacting us.
                   </li>
                 </ul>
               </div>
@@ -139,16 +186,16 @@ const Privacy = () => {
                 <p>We use the following types of cookies:</p>
                 <ul className="list-disc list-inside space-y-2">
                   <li>
-                    <strong className="text-foreground">Essential Cookies:</strong> Required for 
+                    <strong className="text-foreground">Essential Cookies:</strong> Required for
                     basic site functionality (e.g., sidebar state, session management).
                   </li>
                   <li>
-                    <strong className="text-foreground">Analytics Cookies:</strong> Help us 
+                    <strong className="text-foreground">Analytics Cookies:</strong> Help us
                     understand how visitors use our site (only with your consent).
                   </li>
                 </ul>
                 <p>
-                  You can manage your cookie preferences through our cookie consent banner or 
+                  You can manage your cookie preferences through our cookie consent banner or
                   your browser settings.
                 </p>
               </div>
@@ -157,9 +204,9 @@ const Privacy = () => {
             <section className="node-card rounded-xl p-6 border border-border">
               <h2 className="text-xl font-semibold mb-4">8. Data Security</h2>
               <p className="text-muted-foreground">
-                We implement appropriate technical and organizational measures to protect your 
-                data, including encryption in transit and at rest, secure authentication, and 
-                regular security audits. Access to personal data is restricted to authorized 
+                We implement appropriate technical and organizational measures to protect your
+                data, including encryption in transit and at rest, secure authentication, and
+                regular security audits. Access to personal data is restricted to authorized
                 personnel only.
               </p>
             </section>
@@ -167,9 +214,11 @@ const Privacy = () => {
             <section className="node-card rounded-xl p-6 border border-border">
               <h2 className="text-xl font-semibold mb-4">9. Third-Party Services</h2>
               <p className="text-muted-foreground">
-                We use trusted third-party services for hosting and infrastructure. These 
-                providers are GDPR-compliant and process data according to our data 
-                processing agreements.
+                We use Supabase for database hosting and authentication, Vercel for web hosting,
+                and Google Gemini for AI-powered estimation. These providers process data
+                according to their own GDPR-compliant data processing agreements. No personal
+                data from project submissions or estimates is shared with third-party AI
+                services.
               </p>
             </section>
 
@@ -177,23 +226,30 @@ const Privacy = () => {
               <h2 className="text-xl font-semibold mb-4">10. Contact Us</h2>
               <div className="text-muted-foreground">
                 <p className="mb-4">
-                  For any privacy-related questions or to exercise your rights, please contact us:
+                  For any privacy-related questions, to exercise your rights, or to request
+                  deletion of an admin account, please contact us:
                 </p>
-                <a 
+                <a
                   href={`mailto:${contactEmail}`}
                   className="inline-flex items-center gap-2 text-primary hover:underline"
                 >
                   <Mail className="h-4 w-4" />
                   {contactEmail}
                 </a>
+                <p className="mt-4">
+                  To unsubscribe from the mailing list, use the self-service page:{" "}
+                  <a href="/unsubscribe" className="text-primary hover:underline">
+                    /unsubscribe
+                  </a>
+                </p>
               </div>
             </section>
 
             <section className="node-card rounded-xl p-6 border border-border">
               <h2 className="text-xl font-semibold mb-4">11. Changes to This Policy</h2>
               <p className="text-muted-foreground">
-                We may update this Privacy Policy from time to time. We will notify you of any 
-                significant changes by posting a notice on our website. Continued use of our 
+                We may update this Privacy Policy from time to time. We will notify you of any
+                significant changes by posting a notice on our website. Continued use of our
                 services after changes constitutes acceptance of the updated policy.
               </p>
             </section>
