@@ -2,6 +2,7 @@ import { ReactNode, lazy, Suspense, Component, ErrorInfo } from "react";
 import Header from "./Header";
 import Footer from "./Footer";
 import MailingListPopup from "@/components/MailingListPopup";
+import BananaParticles from "@/components/BananaParticles";
 
 const CookieConsent = lazy(() => import("@/components/gdpr/CookieConsent"));
 
@@ -19,6 +20,7 @@ interface LayoutProps {
 const Layout = ({ children }: LayoutProps) => {
   return (
     <div className="min-h-screen bg-background grid-pattern flex flex-col">
+      <BananaParticles />
       <Header />
       <main className="pt-16 flex-1">
         {children}

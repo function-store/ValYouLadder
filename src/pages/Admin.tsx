@@ -139,14 +139,13 @@ const Admin = () => {
     if (!deleteTarget) return;
 
     try {
-      const table = deleteTarget.type === "submission" 
-        ? "project_submissions" 
+      const table = deleteTarget.type === "submission"
+        ? "project_submissions"
         : "estimate_submissions";
-      
-      const { error } = await supabase
-        .from(table)
-        .delete()
-        .eq("id", deleteTarget.id);
+
+      const { error } = await supabase.functions.invoke("admin-manage", {
+        body: { action: "delete", table, id: deleteTarget.id },
+      });
 
       if (error) throw error;
 
@@ -159,7 +158,7 @@ const Admin = () => {
       toast.success(`${deleteTarget.type === "submission" ? "Submission" : "Estimate"} deleted`);
     } catch (error) {
       console.error("Error deleting:", error);
-      toast.error("Failed to delete");
+      toast.error("Failed to delete — are you signed in as admin?");
     }
 
     setDeleteDialogOpen(false);
@@ -168,25 +167,29 @@ const Admin = () => {
 
   const handleEditSave = async (updated: ProjectSubmission) => {
     try {
-      const { error } = await supabase
-        .from("project_submissions")
-        .update({
-          project_type: updated.project_type,
-          client_type: updated.client_type,
-          project_length: updated.project_length,
-          client_country: updated.client_country,
-          project_location: updated.project_location,
-          skills: updated.skills,
-          expertise_level: updated.expertise_level,
-          total_budget: updated.total_budget,
-          your_budget: updated.your_budget,
-          currency: updated.currency,
-          rate_type: updated.rate_type,
-          your_role: updated.your_role,
-          year_completed: updated.year_completed,
-          description: updated.description,
-        })
-        .eq("id", updated.id);
+      const { error } = await supabase.functions.invoke("admin-manage", {
+        body: {
+          action: "update",
+          table: "project_submissions",
+          id: updated.id,
+          updates: {
+            project_type: updated.project_type,
+            client_type: updated.client_type,
+            project_length: updated.project_length,
+            client_country: updated.client_country,
+            project_location: updated.project_location,
+            skills: updated.skills,
+            expertise_level: updated.expertise_level,
+            total_budget: updated.total_budget,
+            your_budget: updated.your_budget,
+            currency: updated.currency,
+            rate_type: updated.rate_type,
+            your_role: updated.your_role,
+            year_completed: updated.year_completed,
+            description: updated.description,
+          },
+        },
+      });
 
       if (error) throw error;
 
@@ -196,7 +199,7 @@ const Admin = () => {
       toast.success("Submission updated");
     } catch (error) {
       console.error("Error updating:", error);
-      toast.error("Failed to update");
+      toast.error("Failed to update — are you signed in as admin?");
     }
 
     setEditDialogOpen(false);
@@ -247,10 +250,9 @@ const Admin = () => {
       : "estimate_submissions";
 
     try {
-      const { error } = await supabase
-        .from(table)
-        .delete()
-        .in("id", ids);
+      const { error } = await supabase.functions.invoke("admin-manage", {
+        body: { action: "bulk-delete", table, ids },
+      });
 
       if (error) throw error;
 
@@ -265,7 +267,7 @@ const Admin = () => {
       toast.success(`Deleted ${ids.length} ${bulkDeleteType === "submission" ? "submissions" : "estimates"}`);
     } catch (error) {
       console.error("Bulk delete error:", error);
-      toast.error("Failed to delete selected items");
+      toast.error("Failed to delete selected items — are you signed in as admin?");
     }
 
     setBulkDeleteDialogOpen(false);

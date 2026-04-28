@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -11,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Send, CheckCircle2, AlertTriangle } from "lucide-react";
 import { triggerMailingListPopup } from "@/components/MailingListPopup";
+import { supabase } from "@/integrations/supabase/client";
+import { addStoredSubmission } from "@/lib/mySubmissions";
 import {
   PROJECT_TYPES,
   CLIENT_TYPES,
@@ -110,11 +113,30 @@ const SubmitProject = () => {
         description: sanitized,
       };
 
-      console.log("Form submitted:", sanitizedData);
-      if (redactions.length > 0) {
-        console.log("Redacted items:", redactions);
-      }
-      // TODO: Submit to database
+      const { data: fnData, error: fnError } = await supabase.functions.invoke(
+        "submit-project",
+        {
+          body: {
+            projectType: sanitizedData.projectType,
+            clientType: sanitizedData.clientType,
+            projectLength: sanitizedData.projectLength,
+            clientCountry: sanitizedData.clientCountry || undefined,
+            projectLocation: sanitizedData.projectLocation,
+            skills: sanitizedData.skills,
+            expertiseLevel: sanitizedData.expertiseLevel,
+            yourRole: sanitizedData.yourRole,
+            rateType: sanitizedData.rateType,
+            currency: sanitizedData.currency,
+            totalBudget: sanitizedData.totalBudget ?? null,
+            yourBudget: sanitizedData.yourBudget,
+            yearCompleted: sanitizedData.yearCompleted,
+            description: sanitizedData.description || null,
+          },
+        }
+      );
+
+      if (fnError) throw fnError;
+      addStoredSubmission(fnData.submissionId, fnData.token);
 
       toast({
         title: "Project submitted!",
@@ -148,13 +170,16 @@ const SubmitProject = () => {
             <p className="text-muted-foreground mb-8">
               Your anonymous project submission has been received. It will help fellow creatives understand market rates.
             </p>
-            <div className="flex gap-4 justify-center">
+            <div className="flex gap-4 justify-center flex-wrap">
               <Button variant="outline" onClick={() => setIsSubmitted(false)}>
                 Submit Another
               </Button>
-              <Button variant="glow" onClick={() => window.location.href = "/database"}>
-                View Database
-              </Button>
+              <Link to="/my-submissions">
+                <Button variant="secondary">My Submissions</Button>
+              </Link>
+              <Link to="/database">
+                <Button variant="glow">View Database</Button>
+              </Link>
             </div>
           </div>
         </div>

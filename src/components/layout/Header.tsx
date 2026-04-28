@@ -1,11 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Database, FileText, Calculator, Menu, X } from "lucide-react";
+import { Database, FileText, Calculator, Menu, X, Folder } from "lucide-react";
 import { useState } from "react";
+import { hasStoredSubmissions } from "@/lib/mySubmissions";
 
 const Header = () => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const showMySubmissions = hasStoredSubmissions();
 
   const navItems = [
     { path: "/", label: "Home", icon: null },
@@ -13,6 +15,9 @@ const Header = () => {
     { path: "/submit", label: "Submit Project", icon: FileText },
     { path: "/database", label: "Database", icon: Database },
     { path: "/estimate", label: "Get Estimate", icon: Calculator },
+    ...(showMySubmissions
+      ? [{ path: "/my-submissions", label: "My Submissions", icon: Folder }]
+      : []),
   ];
 
   return (
@@ -21,7 +26,7 @@ const Header = () => {
         <div className="flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-md bg-primary/20 border border-primary/40 flex items-center justify-center">
-              <span className="text-primary font-mono font-bold text-sm">$</span>
+              <span className="text-lg leading-none">🍌</span>
             </div>
             <span className="font-mono font-semibold text-lg tracking-tight">
               rate<span className="text-primary">_</span>ref
