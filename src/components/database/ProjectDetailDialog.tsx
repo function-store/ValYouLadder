@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +17,7 @@ import {
   RATE_TYPES,
   ProjectSubmission,
 } from "@/lib/projectTypes";
+import { triggerMailingListPopup } from "@/components/MailingListPopup";
 
 interface ProjectDetailDialogProps {
   project: ProjectSubmission | null;
@@ -36,6 +38,16 @@ const formatCurrency = (amount: number) => {
 };
 
 const ProjectDetailDialog = ({ project, open, onOpenChange }: ProjectDetailDialogProps) => {
+  const triggered = useRef(false);
+
+  useEffect(() => {
+    if (open && !triggered.current) {
+      triggered.current = true;
+      const timer = setTimeout(triggerMailingListPopup, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
+
   if (!project) return null;
 
   return (

@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import PrivacyConsentCheckbox from "@/components/gdpr/PrivacyConsentCheckbox";
+import { triggerMailingListPopup } from "@/components/MailingListPopup";
 import {
   DURATION_DAYS,
   MIN_SIMILARITY_THRESHOLD,
@@ -386,6 +387,7 @@ const Estimate = () => {
     }
 
     setIsCalculating(false);
+    setTimeout(triggerMailingListPopup, 2000);
   };
 
   const formatCurrency = (amount: number) => {

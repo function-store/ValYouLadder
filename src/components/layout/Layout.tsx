@@ -1,6 +1,7 @@
 import { ReactNode, lazy, Suspense, Component, ErrorInfo } from "react";
 import Header from "./Header";
 import Footer from "./Footer";
+import MailingListPopup from "@/components/MailingListPopup";
 
 const CookieConsent = lazy(() => import("@/components/gdpr/CookieConsent"));
 
@@ -23,6 +24,7 @@ const Layout = ({ children }: LayoutProps) => {
         {children}
       </main>
       <Footer />
+      <MailingListPopup />
       <LazyErrorBoundary>
         <Suspense fallback={null}>
           <CookieConsent />

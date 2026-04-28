@@ -1,10 +1,11 @@
 import { useState, useMemo, useEffect } from "react";
+import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, ArrowUpDown, Filter, DollarSign, Eye, Loader2 } from "lucide-react";
+import { Search, ArrowUpDown, Filter, DollarSign, Eye, Loader2, Construction } from "lucide-react";
 import {
   PROJECT_TYPES,
   CLIENT_TYPES,
@@ -143,6 +144,24 @@ const Database = () => {
               Browse anonymized project data from the creative tech community. Filter by type, client, or search by skills.
             </p>
           </div>
+
+          {/* Under construction banner */}
+          {!loading && projects.length < 30 && (
+            <div className="mb-8 rounded-xl border border-primary/30 bg-primary/5 p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                <Construction className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-sm mb-1">Database under construction</h3>
+                <p className="text-sm text-muted-foreground">
+                  We currently have {projects.length} project{projects.length !== 1 ? "s" : ""}. The more data we collect, the better our estimates become. Help the community by sharing your project anonymously.
+                </p>
+              </div>
+              <Button asChild variant="default" size="sm" className="flex-shrink-0">
+                <Link to="/submit">Submit a Project</Link>
+              </Button>
+            </div>
+          )}
 
           {/* Filters */}
           <div className="node-card rounded-xl p-4 border border-border mb-8">

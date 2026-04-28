@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Send, CheckCircle2, AlertTriangle } from "lucide-react";
+import { triggerMailingListPopup } from "@/components/MailingListPopup";
 import {
   PROJECT_TYPES,
   CLIENT_TYPES,
@@ -122,6 +123,7 @@ const SubmitProject = () => {
           : "Thank you for contributing to the community.",
       });
       setIsSubmitted(true);
+      setTimeout(triggerMailingListPopup, 2000);
     } catch (error) {
       console.error("Submission error:", error);
       toast({
