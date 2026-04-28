@@ -4,6 +4,7 @@ Rate benchmarking platform for creative professionals — TouchDesigner, Notch, 
 
 ## Stack
 
+
 - **Frontend:** React 18 + TypeScript (Vite), Tailwind CSS, shadcn/ui, TanStack Query
 - **Backend:** Supabase (PostgreSQL + RLS + Auth), Deno edge functions
 - **AI:** Gemini API for rate estimation and privacy sanitization
