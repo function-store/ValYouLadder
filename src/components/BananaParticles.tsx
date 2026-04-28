@@ -11,6 +11,14 @@ interface Particle {
   opacity: number;
 }
 
+interface Ripple {
+  x: number;
+  y: number;
+  radius: number;
+  maxRadius: number;
+  alpha: number;
+}
+
 const BananaParticles = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -23,6 +31,7 @@ const BananaParticles = () => {
     let animationId: number;
     let mouseX = -9999;
     let mouseY = -9999;
+    const ripples: Ripple[] = [];
 
     const resize = () => {
       canvas.width = window.innerWidth;
@@ -39,7 +48,7 @@ const BananaParticles = () => {
       rotation: Math.random() * Math.PI * 2,
       rotationSpeed: (Math.random() - 0.5) * 0.008,
       size: 18 + Math.random() * 22,
-      opacity: 0.06 + Math.random() * 0.1,
+      opacity: 0.07 + Math.random() * 0.1,
     }));
 
     const onMouseMove = (e: MouseEvent) => {
@@ -50,19 +59,69 @@ const BananaParticles = () => {
       mouseX = -9999;
       mouseY = -9999;
     };
+    const onClick = (e: MouseEvent) => {
+      ripples.push({ x: e.clientX, y: e.clientY, radius: 0, maxRadius: 120, alpha: 0.6 });
+    };
 
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseleave", onMouseLeave);
     window.addEventListener("resize", resize);
+    window.addEventListener("click", onClick);
+
+    const CONNECT_DIST = 180;
+    const REPEL_RADIUS = 140;
 
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+      // draw connection lines between nearby particles
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const a = particles[i];
+          const b = particles[j];
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < CONNECT_DIST) {
+            const lineAlpha = (1 - dist / CONNECT_DIST) * 0.18;
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.strokeStyle = `hsla(50, 95%, 60%, ${lineAlpha})`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        }
+      }
+
+      // draw ripples
+      for (let i = ripples.length - 1; i >= 0; i--) {
+        const r = ripples[i];
+        r.radius += 3;
+        r.alpha -= 0.012;
+        if (r.alpha <= 0) { ripples.splice(i, 1); continue; }
+
+        ctx.beginPath();
+        ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+        ctx.strokeStyle = `hsla(50, 95%, 60%, ${r.alpha})`;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // second inner ring
+        if (r.radius > 20) {
+          ctx.beginPath();
+          ctx.arc(r.x, r.y, r.radius * 0.55, 0, Math.PI * 2);
+          ctx.strokeStyle = `hsla(42, 90%, 55%, ${r.alpha * 0.5})`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      }
+
+      // draw bananas
       for (const p of particles) {
         const dx = p.x - mouseX;
         const dy = p.y - mouseY;
         const distSq = dx * dx + dy * dy;
-        const REPEL_RADIUS = 140;
 
         if (distSq < REPEL_RADIUS * REPEL_RADIUS && distSq > 0) {
           const dist = Math.sqrt(distSq);
@@ -71,11 +130,9 @@ const BananaParticles = () => {
           p.vy += (dy / dist) * force;
         }
 
-        // friction
         p.vx *= 0.985;
         p.vy *= 0.985;
 
-        // speed cap
         const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
         if (speed > 2.5) {
           p.vx = (p.vx / speed) * 2.5;
@@ -86,7 +143,6 @@ const BananaParticles = () => {
         p.y += p.vy;
         p.rotation += p.rotationSpeed;
 
-        // wrap edges
         const pad = 60;
         if (p.x < -pad) p.x = canvas.width + pad;
         else if (p.x > canvas.width + pad) p.x = -pad;
@@ -114,6 +170,7 @@ const BananaParticles = () => {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseleave", onMouseLeave);
       window.removeEventListener("resize", resize);
+      window.removeEventListener("click", onClick);
     };
   }, []);
 

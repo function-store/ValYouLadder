@@ -73,6 +73,31 @@ const About = () => {
             </div>
           </div>
 
+          {/* Creator */}
+          <section className="node-card rounded-xl p-8 border border-border mb-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-10 w-10 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-xl">
+                🍌
+              </div>
+              <h2 className="text-2xl font-semibold">Meet the Creator</h2>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-6 items-start">
+              <div className="space-y-4 text-muted-foreground leading-relaxed">
+                <p>
+                  <span className="text-foreground font-medium">Dan Molnar</span> aka {" "}
+                  <span className="text-primary font-medium">Function Store</span> is a Berlin-based artist working with sound, light, and real-time technology to craft immersive installations and live visuals. His work ranges from small experimental spaces and audiovisual performances to arena productions, blending technical precision with both musical and visual intuition.
+                </p>
+                <p>
+                  He is a co-founder of{" "}
+                  <span className="text-primary font-medium">DEREAL Studio</span> and an active educator who develops and shares tools for the creative-tech community.
+                </p>
+                <p>
+                  rate_ref grew out of a real frustration: the creative-tech industry has no shared language around rates. This tool is Dan's attempt to change that — built for the community, by the community.
+                </p>
+              </div>
+            </div>
+          </section>
+
           {/* Call to Action */}
           <section className="node-card rounded-xl p-8 border border-primary/30 bg-primary/5 text-center">
             <h2 className="text-xl font-semibold mb-3">Join the Movement</h2>

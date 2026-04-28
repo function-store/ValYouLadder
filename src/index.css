@@ -110,10 +110,8 @@
   }
 
   .grid-pattern {
-    background-image: 
-      linear-gradient(hsl(var(--grid-line)) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(var(--grid-line)) 1px, transparent 1px);
-    background-size: 40px 40px;
+    background-image: radial-gradient(circle, hsl(var(--grid-line)) 1px, transparent 1px);
+    background-size: 28px 28px;
   }
 
   .node-card {
