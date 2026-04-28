@@ -8,25 +8,27 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
-  Loader2, 
-  Shield, 
-  Database, 
-  Calculator, 
-  LogOut, 
-  Trash2, 
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import {
+  Loader2,
+  Shield,
+  Database,
+  Calculator,
+  LogOut,
+  Trash2,
   Edit2,
   AlertCircle,
   RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from "@/components/ui/table";
 import {
   AlertDialog,
@@ -84,6 +86,11 @@ const Admin = () => {
   const [loadingData, setLoadingData] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: "submission" | "estimate"; id: string } | null>(null);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [bulkDeleteType, setBulkDeleteType] = useState<"submission" | "estimate">("submission");
+  const [bulkDeleteConfirmText, setBulkDeleteConfirmText] = useState("");
+  const [selectedSubmissions, setSelectedSubmissions] = useState<Set<string>>(new Set());
+  const [selectedEstimates, setSelectedEstimates] = useState<Set<string>>(new Set());
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ProjectSubmission | null>(null);
 
@@ -194,6 +201,75 @@ const Admin = () => {
 
     setEditDialogOpen(false);
     setEditTarget(null);
+  };
+
+  const toggleSubmission = (id: string) => {
+    setSelectedSubmissions((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleEstimate = (id: string) => {
+    setSelectedEstimates((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAllSubmissions = () => {
+    if (selectedSubmissions.size === submissions.length) {
+      setSelectedSubmissions(new Set());
+    } else {
+      setSelectedSubmissions(new Set(submissions.map((s) => s.id)));
+    }
+  };
+
+  const toggleAllEstimates = () => {
+    if (selectedEstimates.size === estimates.length) {
+      setSelectedEstimates(new Set());
+    } else {
+      setSelectedEstimates(new Set(estimates.map((e) => e.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = bulkDeleteType === "submission"
+      ? Array.from(selectedSubmissions)
+      : Array.from(selectedEstimates);
+
+    if (ids.length === 0) return;
+
+    const table = bulkDeleteType === "submission"
+      ? "project_submissions"
+      : "estimate_submissions";
+
+    try {
+      const { error } = await supabase
+        .from(table)
+        .delete()
+        .in("id", ids);
+
+      if (error) throw error;
+
+      if (bulkDeleteType === "submission") {
+        setSubmissions((prev) => prev.filter((s) => !selectedSubmissions.has(s.id)));
+        setSelectedSubmissions(new Set());
+      } else {
+        setEstimates((prev) => prev.filter((e) => !selectedEstimates.has(e.id)));
+        setSelectedEstimates(new Set());
+      }
+
+      toast.success(`Deleted ${ids.length} ${bulkDeleteType === "submission" ? "submissions" : "estimates"}`);
+    } catch (error) {
+      console.error("Bulk delete error:", error);
+      toast.error("Failed to delete selected items");
+    }
+
+    setBulkDeleteDialogOpen(false);
+    setBulkDeleteConfirmText("");
   };
 
   const handleSignOut = async () => {
@@ -345,8 +421,21 @@ const Admin = () => {
 
           <TabsContent value="submissions">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
                 <CardTitle>Project Submissions</CardTitle>
+                {selectedSubmissions.size > 0 && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      setBulkDeleteType("submission");
+                      setBulkDeleteDialogOpen(true);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Selected ({selectedSubmissions.size})
+                  </Button>
+                )}
               </CardHeader>
               <CardContent>
                 {loadingData ? (
@@ -362,6 +451,12 @@ const Admin = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead className="w-10">
+                            <Checkbox
+                              checked={selectedSubmissions.size === submissions.length && submissions.length > 0}
+                              onCheckedChange={toggleAllSubmissions}
+                            />
+                          </TableHead>
                           <TableHead>Date</TableHead>
                           <TableHead>Client</TableHead>
                           <TableHead>Type</TableHead>
@@ -373,7 +468,13 @@ const Admin = () => {
                       </TableHeader>
                       <TableBody>
                         {submissions.map((sub) => (
-                          <TableRow key={sub.id}>
+                          <TableRow key={sub.id} data-state={selectedSubmissions.has(sub.id) ? "selected" : undefined}>
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedSubmissions.has(sub.id)}
+                                onCheckedChange={() => toggleSubmission(sub.id)}
+                              />
+                            </TableCell>
                             <TableCell className="whitespace-nowrap">
                               {formatDate(sub.created_at)}
                             </TableCell>
@@ -436,8 +537,21 @@ const Admin = () => {
 
           <TabsContent value="estimates">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
                 <CardTitle>Estimate Requests</CardTitle>
+                {selectedEstimates.size > 0 && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      setBulkDeleteType("estimate");
+                      setBulkDeleteDialogOpen(true);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Selected ({selectedEstimates.size})
+                  </Button>
+                )}
               </CardHeader>
               <CardContent>
                 {loadingData ? (
@@ -453,6 +567,12 @@ const Admin = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead className="w-10">
+                            <Checkbox
+                              checked={selectedEstimates.size === estimates.length && estimates.length > 0}
+                              onCheckedChange={toggleAllEstimates}
+                            />
+                          </TableHead>
                           <TableHead>Date</TableHead>
                           <TableHead>Client</TableHead>
                           <TableHead>Type</TableHead>
@@ -465,7 +585,13 @@ const Admin = () => {
                       </TableHeader>
                       <TableBody>
                         {estimates.map((est) => (
-                          <TableRow key={est.id}>
+                          <TableRow key={est.id} data-state={selectedEstimates.has(est.id) ? "selected" : undefined}>
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedEstimates.has(est.id)}
+                                onCheckedChange={() => toggleEstimate(est.id)}
+                              />
+                            </TableCell>
                             <TableCell className="whitespace-nowrap">
                               {formatDate(est.created_at)}
                             </TableCell>
@@ -529,6 +655,38 @@ const Admin = () => {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={(open) => {
+        setBulkDeleteDialogOpen(open);
+        if (!open) setBulkDeleteConfirmText("");
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {bulkDeleteType === "submission" ? selectedSubmissions.size : selectedEstimates.size} {bulkDeleteType === "submission" ? "submissions" : "estimates"}?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <span className="block">This action cannot be undone. All selected records will be permanently removed.</span>
+              <span className="block font-medium text-foreground">Type <span className="font-mono text-destructive">DELETE</span> to confirm:</span>
+              <Input
+                value={bulkDeleteConfirmText}
+                onChange={(e) => setBulkDeleteConfirmText(e.target.value)}
+                placeholder="Type DELETE to confirm"
+                className="font-mono"
+              />
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={bulkDeleteConfirmText !== "DELETE"}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+            >
+              Delete All Selected
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

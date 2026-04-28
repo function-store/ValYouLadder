@@ -1,7 +1,15 @@
-import { ReactNode } from "react";
+import { ReactNode, lazy, Suspense, Component, ErrorInfo } from "react";
 import Header from "./Header";
 import Footer from "./Footer";
-import CookieConsent from "@/components/gdpr/CookieConsent";
+
+const CookieConsent = lazy(() => import("@/components/gdpr/CookieConsent"));
+
+class LazyErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(e: Error, info: ErrorInfo) { console.warn("CookieConsent failed to load:", e); }
+  render() { return this.state.failed ? null : this.props.children; }
+}
 
 interface LayoutProps {
   children: ReactNode;
@@ -15,7 +23,11 @@ const Layout = ({ children }: LayoutProps) => {
         {children}
       </main>
       <Footer />
-      <CookieConsent />
+      <LazyErrorBoundary>
+        <Suspense fallback={null}>
+          <CookieConsent />
+        </Suspense>
+      </LazyErrorBoundary>
     </div>
   );
 };

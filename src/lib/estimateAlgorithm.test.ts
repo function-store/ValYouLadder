@@ -12,13 +12,12 @@ import {
 // --- DURATION_DAYS ---
 describe("DURATION_DAYS", () => {
   it("maps all expected project length categories", () => {
-    expect(DURATION_DAYS["Less than a day"]).toBe(0.5);
-    expect(DURATION_DAYS["1-3 days"]).toBe(2);
-    expect(DURATION_DAYS["1 week"]).toBe(5);
-    expect(DURATION_DAYS["2-4 weeks"]).toBe(15);
-    expect(DURATION_DAYS["1-3 months"]).toBe(45);
-    expect(DURATION_DAYS["3-6 months"]).toBe(90);
-    expect(DURATION_DAYS["6+ months"]).toBe(180);
+    expect(DURATION_DAYS["day"]).toBe(1);
+    expect(DURATION_DAYS["2-5-days"]).toBe(3.5);
+    expect(DURATION_DAYS["1-2-weeks"]).toBe(7);
+    expect(DURATION_DAYS["1-3-months"]).toBe(45);
+    expect(DURATION_DAYS["3-6-months"]).toBe(90);
+    expect(DURATION_DAYS["6plus-months"]).toBe(180);
   });
 });
 
@@ -163,8 +162,8 @@ describe("essToConfidence", () => {
 describe("budget normalization round-trip", () => {
   it("normalizing to daily rate and scaling back preserves relative order", () => {
     // Simulate two projects: short expensive vs long cheap
-    const shortProject = { budget: 5000, projectLength: "1-3 days" }; // $2500/day
-    const longProject = { budget: 9000, projectLength: "1-3 months" }; // $200/day
+    const shortProject = { budget: 5000, projectLength: "2-5-days" }; // ~$1428/day
+    const longProject = { budget: 9000, projectLength: "1-3-months" }; // $200/day
 
     const shortRate = shortProject.budget / DURATION_DAYS[shortProject.projectLength];
     const longRate = longProject.budget / DURATION_DAYS[longProject.projectLength];
@@ -172,8 +171,8 @@ describe("budget normalization round-trip", () => {
     // The short project has a much higher daily rate
     expect(shortRate).toBeGreaterThan(longRate);
 
-    // When we scale back to a "2-4 weeks" target, the estimate reflects daily rates
-    const targetDays = DURATION_DAYS["2-4 weeks"]; // 15 days
+    // When we scale back to a "1-2-weeks" target, the estimate reflects daily rates
+    const targetDays = DURATION_DAYS["1-2-weeks"]; // 7 days
     expect(shortRate * targetDays).toBeGreaterThan(longRate * targetDays);
   });
 
