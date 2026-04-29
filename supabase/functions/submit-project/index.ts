@@ -129,7 +129,7 @@ serve(async (req) => {
     if (contactEmail && (sendEditLink || newsletterOptIn)) {
       const brevoKey = Deno.env.get("BREVO_API_KEY");
       if (brevoKey) {
-        const siteUrl = Deno.env.get("SITE_URL") ?? "https://creative-cost-compass.vercel.app";
+        const siteUrl = Deno.env.get("SITE_URL") ?? "https://valyouladder.com";
         const editUrl = `${siteUrl}/my-submissions?id=${submission.id}&token=${token}`;
 
         const tasks: Promise<void>[] = [];

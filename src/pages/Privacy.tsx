@@ -150,7 +150,7 @@ const Privacy = () => {
                           href="/unsubscribe"
                           className="text-primary hover:underline"
                         >
-                          creative-cost-compass.vercel.app/unsubscribe
+                          valyouladder.com/unsubscribe
                         </a>
                         .
                       </span>

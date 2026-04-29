@@ -2,7 +2,7 @@
 
 Rate benchmarking platform for creative professionals — TouchDesigner, Notch, projection mapping, LED installations, and live visuals. Community-submitted project data powers a similarity-weighted estimation engine, optionally enhanced by Gemini AI.
 
-Live: [creative-cost-compass.vercel.app](https://creative-cost-compass.vercel.app)  
+Live: [valyouladder.com](https://valyouladder.com)  
 Built by [Function Store](https://functionstore.xyz/link-in-bio) · [Support on Patreon](https://patreon.com/function_store)
 
 ---
@@ -121,7 +121,7 @@ Set these in the Supabase dashboard under **Settings > Edge Functions > Secrets*
 ```sh
 npx supabase secrets set GEMINI_API_KEY=your-gemini-key
 npx supabase secrets set BREVO_API_KEY=your-brevo-key
-npx supabase secrets set SITE_URL=https://creative-cost-compass.vercel.app
+npx supabase secrets set SITE_URL=https://valyouladder.com
 ```
 
 | Secret | Used by | Description |
