@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Database, FileText } from "lucide-react";
+import PreProdBanner from "@/components/PreProdBanner";
 
 const HeroSection = () => {
   return (
@@ -13,6 +14,7 @@ const HeroSection = () => {
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-4xl mx-auto text-center">
+          <PreProdBanner message="This is a preview of rate_ref. Data shown on this site is for demonstration purposes only and does not reflect real submissions." />
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary border border-border mb-8 animate-slide-up">
             <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />

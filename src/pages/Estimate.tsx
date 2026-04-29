@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import PrivacyConsentCheckbox from "@/components/gdpr/PrivacyConsentCheckbox";
 import { triggerMailingListPopup } from "@/components/MailingListPopup";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import PreProdBanner from "@/components/PreProdBanner";
 import {
   DURATION_DAYS,
   MIN_SIMILARITY_THRESHOLD,
@@ -408,6 +409,8 @@ const Estimate = () => {
     <Layout>
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
+          <PreProdBanner message="Estimates are based on mock data only. Results do not reflect real market rates." />
+
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-6">
               <Sparkles className="h-4 w-4 text-primary" />

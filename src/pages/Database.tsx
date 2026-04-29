@@ -17,6 +17,7 @@ import ProjectDetailDialog from "@/components/database/ProjectDetailDialog";
 import { sanitizeDescription } from "@/lib/sanitizeSubmission";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import PreProdBanner from "@/components/PreProdBanner";
 
 const Database = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -140,6 +141,8 @@ const Database = () => {
               Browse anonymized project data from the creative tech community. Filter by type, client, or search by skills.
             </p>
           </div>
+
+          <PreProdBanner message="All entries shown here are mock data. None of it represents real project submissions." />
 
           {/* Under construction banner */}
           {!loading && projects.length < 30 && (
