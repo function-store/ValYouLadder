@@ -10,7 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Send, CheckCircle2, AlertTriangle, Lock } from "lucide-react";
+import { Send, CheckCircle2, AlertTriangle, Lock, Mail } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { triggerMailingListPopup } from "@/components/MailingListPopup";
 import { supabase } from "@/integrations/supabase/client";
 import { addStoredSubmission } from "@/lib/mySubmissions";
@@ -61,6 +62,9 @@ const SubmitProject = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [descriptionWarnings, setDescriptionWarnings] = useState<string[]>([]);
   const [privacyConsent, setPrivacyConsent] = useState(false);
+  const [contactEmail, setContactEmail] = useState("");
+  const [sendEditLink, setSendEditLink] = useState(false);
+  const [newsletterOptIn, setNewsletterOptIn] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -139,6 +143,9 @@ const SubmitProject = () => {
             daysOfWork: sanitizedData.daysOfWork ?? null,
             yearCompleted: sanitizedData.yearCompleted,
             description: sanitizedData.description || null,
+            contactEmail: (sendEditLink || newsletterOptIn) ? contactEmail : undefined,
+            sendEditLink,
+            newsletterOptIn,
           },
         }
       );
@@ -553,6 +560,44 @@ const SubmitProject = () => {
               onCheckedChange={setPrivacyConsent}
               id="submit-privacy-consent"
             />
+
+            {/* Optional email */}
+            <div className="rounded-xl p-5 border border-border/40 bg-secondary/10 space-y-4">
+              <p className="text-xs text-muted-foreground font-mono uppercase tracking-widest">Optional</p>
+              <div className="space-y-3">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <Checkbox
+                    checked={sendEditLink}
+                    onCheckedChange={(v) => setSendEditLink(!!v)}
+                    className="mt-0.5"
+                  />
+                  <div>
+                    <p className="text-sm leading-snug">Email me a private edit link</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Sent once, then your email is deleted. Not linked to your public submission.</p>
+                  </div>
+                </label>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <Checkbox
+                    checked={newsletterOptIn}
+                    onCheckedChange={(v) => setNewsletterOptIn(!!v)}
+                    className="mt-0.5"
+                  />
+                  <p className="text-sm leading-snug">Keep me updated on new features and data</p>
+                </label>
+              </div>
+              {(sendEditLink || newsletterOptIn) && (
+                <div className="relative max-w-sm">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="email"
+                    placeholder="your@email.com"
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              )}
+            </div>
 
             {/* Verification Step */}
             <VerificationStep

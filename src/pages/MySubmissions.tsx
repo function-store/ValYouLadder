@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Pencil, Trash2, Loader2 } from "lucide-react";
-import { getStoredSubmissions, removeStoredSubmission } from "@/lib/mySubmissions";
+import { getStoredSubmissions, addStoredSubmission, removeStoredSubmission } from "@/lib/mySubmissions";
 import EditSubmissionDialog, { DBSubmission } from "@/components/submit/EditSubmissionDialog";
 import {
   PROJECT_TYPES,
@@ -21,11 +21,13 @@ const label = (
 ) => list.find((i) => i.value === value)?.label ?? value;
 
 const MySubmissions = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [submissions, setSubmissions] = useState<DBSubmission[]>([]);
   const [tokenMap, setTokenMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [editTarget, setEditTarget] = useState<DBSubmission | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [restoredFromEmail, setRestoredFromEmail] = useState(false);
 
   const fetchSubmissions = useCallback(async () => {
     const stored = getStoredSubmissions();
@@ -53,8 +55,15 @@ const MySubmissions = () => {
   }, []);
 
   useEffect(() => {
+    const id = searchParams.get("id");
+    const token = searchParams.get("token");
+    if (id && token) {
+      addStoredSubmission(id, token);
+      setSearchParams({}, { replace: true });
+      setRestoredFromEmail(true);
+    }
     fetchSubmissions();
-  }, [fetchSubmissions]);
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDelete = async (id: string) => {
     if (!window.confirm("Delete this submission? This cannot be undone.")) return;
@@ -100,6 +109,12 @@ const MySubmissions = () => {
               Submissions from this browser. You can edit or delete any entry.
             </p>
           </div>
+
+          {restoredFromEmail && (
+            <div className="mb-6 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary">
+              Your submission has been restored from your email link and is now accessible in this browser.
+            </div>
+          )}
 
           {submissions.length === 0 ? (
             <div className="node-card rounded-xl p-12 border border-border text-center">

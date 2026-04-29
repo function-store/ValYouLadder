@@ -61,6 +61,7 @@ interface ProjectSubmission {
   year_completed: number;
   description: string | null;
   created_at: string;
+  updated_at: string | null;
 }
 
 interface EstimateSubmission {
@@ -459,7 +460,8 @@ const Admin = () => {
                               onCheckedChange={toggleAllSubmissions}
                             />
                           </TableHead>
-                          <TableHead>Date</TableHead>
+                          <TableHead>Submitted</TableHead>
+                          <TableHead>Edited</TableHead>
                           <TableHead>Client</TableHead>
                           <TableHead>Type</TableHead>
                           <TableHead>Skills</TableHead>
@@ -479,6 +481,13 @@ const Admin = () => {
                             </TableCell>
                             <TableCell className="whitespace-nowrap">
                               {formatDate(sub.created_at)}
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap">
+                              {sub.updated_at ? (
+                                <span className="text-primary">{formatDate(sub.updated_at)}</span>
+                              ) : (
+                                <span className="text-muted-foreground/40">—</span>
+                              )}
                             </TableCell>
                             <TableCell>
                               <Badge variant="outline">{sub.client_type}</Badge>
