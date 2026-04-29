@@ -25,5 +25,7 @@ dist-ssr
 /.claude
 /.modus
 
+.env
+.env.local
 .vercel
 /supabase/.temp
