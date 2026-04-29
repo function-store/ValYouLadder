@@ -1,5 +1,5 @@
 import Layout from "@/components/layout/Layout";
-import { Target, Users, TrendingUp, Shield } from "lucide-react";
+import { Target, Users, TrendingUp, Shield, Heart } from "lucide-react";
 
 const About = () => {
   return (
@@ -98,8 +98,38 @@ const About = () => {
             </div>
           </section>
 
+          {/* Support */}
+          <section className="node-card rounded-xl p-8 border border-primary/40 bg-primary/5 mb-8">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="h-10 w-10 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center">
+                <Heart className="h-5 w-5 text-primary" />
+              </div>
+              <h2 className="text-2xl font-semibold">Support the Project</h2>
+            </div>
+            <div className="space-y-4 text-muted-foreground leading-relaxed mb-6">
+              <p>
+                rate_ref is a community project run by{" "}
+                <span className="text-foreground font-medium">Function Store</span>. Keeping the
+                website up, the database running, and new features coming takes real money and time.
+              </p>
+              <p>
+                If this tool has helped you negotiate a better rate or understand your market value,
+                consider becoming a supporter on Patreon — and get access to extra goodies along the way.
+              </p>
+            </div>
+            <a
+              href="https://patreon.com/function_store"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-mono font-semibold text-sm hover:bg-primary/90 transition-colors"
+            >
+              <Heart className="h-4 w-4" />
+              Support on Patreon
+            </a>
+          </section>
+
           {/* Call to Action */}
-          <section className="node-card rounded-xl p-8 border border-primary/30 bg-primary/5 text-center">
+          <section className="node-card rounded-xl p-8 border border-border bg-secondary/20 text-center">
             <h2 className="text-xl font-semibold mb-3">Join the Movement</h2>
             <p className="text-muted-foreground mb-4">
               Help build a more transparent industry by contributing your project data.

@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Heart } from "lucide-react";
 
 const Footer = () => {
   return (
@@ -6,17 +7,34 @@ const Footer = () => {
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Rate Database. All rights reserved.
+            © {new Date().getFullYear()} rate_ref by{" "}
+            <a
+              href="https://patreon.com/function_store"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-foreground hover:text-primary transition-colors"
+            >
+              Function Store
+            </a>
           </p>
           <div className="flex items-center gap-6">
-            <Link 
-              to="/privacy" 
+            <a
+              href="https://patreon.com/function_store"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
+            >
+              <Heart className="h-3.5 w-3.5" />
+              Support on Patreon
+            </a>
+            <Link
+              to="/privacy"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Privacy Policy
             </Link>
-            <Link 
-              to="/auth" 
+            <Link
+              to="/auth"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Admin
