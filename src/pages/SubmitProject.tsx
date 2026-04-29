@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Send, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Send, CheckCircle2, AlertTriangle, Lock } from "lucide-react";
 import { triggerMailingListPopup } from "@/components/MailingListPopup";
 import { supabase } from "@/integrations/supabase/client";
 import { addStoredSubmission } from "@/lib/mySubmissions";
@@ -48,6 +48,8 @@ const formSchema = z.object({
 });
 
 type FormData = z.infer<typeof formSchema>;
+
+const SUBMISSIONS_OPEN = false;
 
 const SubmitProject = () => {
   const { toast } = useToast();
@@ -201,6 +203,16 @@ const SubmitProject = () => {
               Share your project details anonymously to help build a transparent rate database.
             </p>
           </div>
+
+          {!SUBMISSIONS_OPEN && (
+            <div className="flex items-start gap-3 rounded-xl border border-border bg-secondary/50 p-4 mb-6">
+              <Lock className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
+              <div className="text-sm text-muted-foreground">
+                <span className="font-semibold text-foreground">Preview mode.</span>{" "}
+                Submissions are not open yet. You can explore the form, but nothing will be saved.
+              </div>
+            </div>
+          )}
 
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             {/* Project Details */}
@@ -535,10 +547,10 @@ const SubmitProject = () => {
               variant="glow"
               size="xl"
               className="w-full gap-2"
-              disabled={!isVerified || !privacyConsent || isSubmitting}
+              disabled={!SUBMISSIONS_OPEN || !isVerified || !privacyConsent || isSubmitting}
             >
               <Send className="h-5 w-5" />
-              {isSubmitting ? "Submitting..." : "Submit Anonymously"}
+              {!SUBMISSIONS_OPEN ? "Submissions not open yet" : isSubmitting ? "Submitting..." : "Submit Anonymously"}
             </Button>
           </form>
         </div>
