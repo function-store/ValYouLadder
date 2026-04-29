@@ -49,6 +49,11 @@ const HeroSection = () => {
               </Button>
             </Link>
           </div>
+          <div className="animate-slide-up mt-4" style={{ animationDelay: "0.4s" }}>
+            <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline">
+              Read our mission
+            </Link>
+          </div>
         </div>
 
         {/* Stats */}
