@@ -85,11 +85,11 @@ const About = () => {
               <div className="space-y-4 text-muted-foreground leading-relaxed">
                 <p>
                   <span className="text-foreground font-medium">Dan Molnar</span> aka {" "}
-                  <span className="text-primary font-medium">Function Store</span> is a Berlin-based artist working with sound, light, and real-time technology to craft immersive installations and live visuals. His work ranges from small experimental spaces and audiovisual performances to arena productions, blending technical precision with both musical and visual intuition.
+                  <a href="https://functionstore.xyz/link-in-bio" target="_blank" rel="noopener noreferrer" className="text-primary font-medium hover:text-primary/80 transition-colors">Function Store</a> is a Berlin-based artist working with sound, light, and real-time technology to craft immersive installations and live visuals. His work ranges from small experimental spaces and audiovisual performances to arena productions, blending technical precision with both musical and visual intuition.
                 </p>
                 <p>
                   He is a co-founder of{" "}
-                  <span className="text-primary font-medium">DEREAL Studio</span> and an active educator who develops and shares tools for the creative-tech community.
+                  <a href="https://www.derealstudio.com/" target="_blank" rel="noopener noreferrer" className="text-primary font-medium hover:text-primary/80 transition-colors">DEREAL Studio</a> and an active educator who develops and shares tools for the creative-tech community.
                 </p>
                 <p>
                   ValYouLadder grew out of a real frustration: the creative-tech industry has no shared language around rates. This tool is Dan's attempt to change that — built for the community, by the community.
@@ -109,7 +109,7 @@ const About = () => {
             <div className="space-y-4 text-muted-foreground leading-relaxed mb-6">
               <p>
                 ValYouLadder is a community project run by{" "}
-                <span className="text-foreground font-medium">Function Store</span>. Keeping the
+                <a href="https://functionstore.xyz/link-in-bio" target="_blank" rel="noopener noreferrer" className="text-foreground font-medium hover:text-primary transition-colors">Function Store</a>. Keeping the
                 website up, the database running, and new features coming takes real money and time.
               </p>
               <p>
