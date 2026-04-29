@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
+import NewsletterSignup from "@/components/NewsletterSignup";
 
 const CTASection = () => {
   return (
@@ -27,6 +28,11 @@ const CTASection = () => {
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Button>
           </Link>
+
+          <div className="mt-10 pt-8 border-t border-border">
+            <p className="text-sm text-muted-foreground mb-4">Want updates when new data and features land?</p>
+            <NewsletterSignup />
+          </div>
         </div>
       </div>
     </section>
