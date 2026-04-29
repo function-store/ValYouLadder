@@ -42,6 +42,7 @@ export interface SimilarProject {
   clientCountry?: string;
   currency?: string;
   yourRole?: string;
+  contractedAs?: string;
   daysOfWork?: number;
   /** Similarity score used for ranking and weighted percentile calculation */
   similarityScore?: number;
@@ -51,7 +52,7 @@ export interface SimilarProject {
 
 interface SimilarProjectsListProps {
   projects: SimilarProject[];
-  formatCurrency: (amount: number) => string;
+  formatCurrency: (amount: number, currency?: string) => string;
 }
 
 const getLabel = (
@@ -107,11 +108,12 @@ const SimilarProjectsList = ({ projects, formatCurrency }: SimilarProjectsListPr
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {project.location} • {project.yearCompleted}
+                    {project.contractedAs && ` • ${project.contractedAs === "studio" ? "Studio" : "Freelancer"}`}
                   </p>
                 </div>
                 <div className="text-right">
                   <div className="font-mono font-bold text-primary">
-                    {formatCurrency(project.budget)}
+                    {formatCurrency(project.budget, project.currency)}
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {getLabel(project.expertiseLevel, EXPERTISE_LEVELS)}
@@ -162,7 +164,7 @@ const SimilarProjectsList = ({ projects, formatCurrency }: SimilarProjectsListPr
                   <span className="text-sm text-muted-foreground">Project Budget</span>
                 </div>
                 <span className="text-2xl font-mono font-bold text-primary">
-                  {formatCurrency(selectedProject.budget)}
+                  {formatCurrency(selectedProject.budget, selectedProject.currency)}
                 </span>
               </div>
 

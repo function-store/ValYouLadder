@@ -54,6 +54,7 @@ serve(async (req) => {
         skills: body.skills,
         expertise_level: body.expertiseLevel,
         your_role: body.yourRole,
+        contracted_as: body.contractedAs || null,
         rate_type: body.rateType,
         currency: body.currency,
         total_budget: body.totalBudget ?? null,

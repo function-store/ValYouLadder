@@ -56,6 +56,7 @@ interface ProjectSubmission {
   days_of_work: number | null;
   currency: string;
   rate_type: string | null;
+  contracted_as: string | null;
   your_role: string | null;
   year_completed: number;
   description: string | null;
@@ -186,6 +187,7 @@ const Admin = () => {
             days_of_work: updated.days_of_work,
             currency: updated.currency,
             rate_type: updated.rate_type,
+            contracted_as: updated.contracted_as,
             your_role: updated.your_role,
             year_completed: updated.year_completed,
             description: updated.description,

@@ -28,6 +28,7 @@ import {
   RATE_TYPES,
   YOUR_ROLES,
   CURRENCIES,
+  CONTRACTED_AS,
 } from "@/lib/projectTypes";
 
 export interface DBSubmission {
@@ -40,6 +41,7 @@ export interface DBSubmission {
   skills: string[];
   expertise_level: string;
   your_role: string | null;
+  contracted_as: string | null;
   rate_type: string | null;
   currency: string;
   total_budget: number | null;
@@ -66,6 +68,7 @@ const EditSubmissionDialog = ({ submission, token, onSaved, onClose }: Props) =>
   const [skills, setSkills] = useState<string[]>(submission.skills ?? []);
   const [expertiseLevel, setExpertiseLevel] = useState(submission.expertise_level);
   const [yourRole, setYourRole] = useState(submission.your_role ?? "");
+  const [contractedAs, setContractedAs] = useState(submission.contracted_as ?? "");
   const [rateType, setRateType] = useState(submission.rate_type ?? "");
   const [currency, setCurrency] = useState(submission.currency);
   const [totalBudget, setTotalBudget] = useState(
@@ -98,6 +101,7 @@ const EditSubmissionDialog = ({ submission, token, onSaved, onClose }: Props) =>
             skills,
             expertise_level: expertiseLevel,
             your_role: yourRole || null,
+            contracted_as: contractedAs || null,
             rate_type: rateType || null,
             currency,
             total_budget: totalBudget !== "" ? Number(totalBudget) : null,
@@ -243,6 +247,17 @@ const EditSubmissionDialog = ({ submission, token, onSaved, onClose }: Props) =>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Contracted As</Label>
+              <Select value={contractedAs} onValueChange={setContractedAs}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {CONTRACTED_AS.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <Label>How Were You Paid?</Label>
               <Select value={rateType} onValueChange={setRateType}>

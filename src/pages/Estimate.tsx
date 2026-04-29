@@ -38,6 +38,7 @@ interface DatabaseProject {
   currency: string;
   rate_type: string | null;
   your_role: string | null;
+  contracted_as: string | null;
   days_of_work: number | null;
   year_completed: number;
   description: string | null;
@@ -183,6 +184,7 @@ const Estimate = () => {
       clientCountry: project.client_country || undefined,
       currency: project.currency,
       yourRole: project.your_role || undefined,
+      contractedAs: project.contracted_as || undefined,
       daysOfWork: project.days_of_work ?? undefined,
       similarityScore: score,
       effectiveRate: computeEffectiveRate(project),

@@ -1,5 +1,5 @@
 import Layout from "@/components/layout/Layout";
-import { Target, Users, TrendingUp, Shield, Heart } from "lucide-react";
+import { Target, Users, TrendingUp, Shield, Heart, Mail } from "lucide-react";
 
 const About = () => {
   return (
@@ -117,15 +117,24 @@ const About = () => {
                 consider becoming a supporter on Patreon — and get access to extra goodies along the way.
               </p>
             </div>
-            <a
-              href="https://patreon.com/function_store"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-mono font-semibold text-sm hover:bg-primary/90 transition-colors"
-            >
-              <Heart className="h-4 w-4" />
-              Support on Patreon
-            </a>
+            <div className="flex flex-wrap gap-3">
+              <a
+                href="https://patreon.com/function_store"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-mono font-semibold text-sm hover:bg-primary/90 transition-colors"
+              >
+                <Heart className="h-4 w-4" />
+                Support on Patreon
+              </a>
+              <a
+                href="mailto:dan@functionstore.xyz"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-border text-foreground font-mono font-semibold text-sm hover:border-primary/50 hover:text-primary transition-colors"
+              >
+                <Mail className="h-4 w-4" />
+                Send Feedback
+              </a>
+            </div>
           </section>
 
           {/* Call to Action */}

@@ -38,30 +38,33 @@ const EstimateResults = ({ estimate, formatCurrency, aiInsights }: EstimateResul
   return (
     <div className="space-y-6">
       <div className="node-card rounded-xl p-6 border border-primary/30 space-y-6">
-        <div className="flex items-center gap-2 text-primary">
-          <TrendingUp className="h-5 w-5" />
-          <h2 className="font-mono font-semibold text-lg">
-            Estimated Rate Range
-          </h2>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-primary">
+            <TrendingUp className="h-5 w-5" />
+            <h2 className="font-mono font-semibold text-lg">
+              Estimated Rate Range
+            </h2>
+          </div>
+          <span className="text-xs text-muted-foreground font-mono">approx. USD baseline</span>
         </div>
 
         <div className="grid grid-cols-3 gap-4 text-center">
           <div className="space-y-1">
             <div className="text-sm text-muted-foreground">Low</div>
             <div className="text-xl font-mono font-bold">
-              {formatCurrency(estimate.low)}
+              {formatCurrency(estimate.low, "USD")}
             </div>
           </div>
           <div className="space-y-1">
             <div className="text-sm text-primary">Suggested</div>
             <div className="text-3xl font-mono font-bold text-primary glow-text">
-              {formatCurrency(estimate.mid)}
+              {formatCurrency(estimate.mid, "USD")}
             </div>
           </div>
           <div className="space-y-1">
             <div className="text-sm text-muted-foreground">High</div>
             <div className="text-xl font-mono font-bold">
-              {formatCurrency(estimate.high)}
+              {formatCurrency(estimate.high, "USD")}
             </div>
           </div>
         </div>

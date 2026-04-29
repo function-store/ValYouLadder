@@ -28,6 +28,7 @@ import {
   RATE_TYPES,
   YOUR_ROLES,
   CURRENCIES,
+  CONTRACTED_AS,
 } from "@/lib/projectTypes";
 import { X } from "lucide-react";
 
@@ -45,6 +46,7 @@ interface ProjectSubmission {
   days_of_work: number | null;
   currency: string;
   rate_type: string | null;
+  contracted_as: string | null;
   your_role: string | null;
   year_completed: number;
   description: string | null;
@@ -187,6 +189,27 @@ const AdminEditDialog = ({
                   {YOUR_ROLES.map((role) => (
                     <SelectItem key={role.value} value={role.value}>
                       {role.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Contracted As</Label>
+              <Select
+                value={formData.contracted_as || ""}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, contracted_as: value || null }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {CONTRACTED_AS.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

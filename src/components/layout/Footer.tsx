@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Heart } from "lucide-react";
+import { Heart, Mail } from "lucide-react";
 
 const Footer = () => {
   return (
@@ -26,6 +26,13 @@ const Footer = () => {
             >
               <Heart className="h-3.5 w-3.5" />
               Support on Patreon
+            </a>
+            <a
+              href="mailto:dan@functionstore.xyz"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Mail className="h-3.5 w-3.5" />
+              Feedback
             </a>
             <Link
               to="/privacy"

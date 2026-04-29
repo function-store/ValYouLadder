@@ -65,6 +65,7 @@ const Database = () => {
               currency: row.currency,
               rateType: row.rate_type ?? undefined,
               yourRole: row.your_role ?? undefined,
+              contractedAs: row.contracted_as ?? undefined,
               daysOfWork: row.days_of_work ?? undefined,
               yearCompleted: row.year_completed,
               description: row.description ?? undefined,
@@ -306,6 +307,7 @@ const Database = () => {
 
                     <div className="flex flex-wrap gap-4 text-xs text-muted-foreground pt-2 border-t border-border">
                       {project.totalBudget != null && <span>Total budget: {formatCurrency(project.totalBudget, project.currency)}</span>}
+                      {project.contractedAs && <span>{project.contractedAs === "studio" ? "Studio" : "Freelancer"}</span>}
                       {project.yourRole && <span>Role: {project.yourRole}</span>}
                       <span>Experience: {getLabel(project.expertiseLevel, EXPERTISE_LEVELS)}</span>
                       <span>Location: {project.projectLocation}</span>

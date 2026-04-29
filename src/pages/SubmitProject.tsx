@@ -24,6 +24,7 @@ import {
   RATE_TYPES,
   YOUR_ROLES,
   CURRENCIES,
+  CONTRACTED_AS,
 } from "@/lib/projectTypes";
 import { validateDescription, sanitizeDescriptionWithAI } from "@/lib/sanitizeSubmission";
 import VerificationStep from "@/components/submit/VerificationStep";
@@ -38,6 +39,7 @@ const formSchema = z.object({
   skills: z.array(z.string()).min(1, "Select at least one skill"),
   expertiseLevel: z.string().min(1, "Expertise level is required"),
   yourRole: z.string().min(1, "Your role is required"),
+  contractedAs: z.string().min(1, "Required"),
   rateType: z.string().min(1, "Rate type is required"),
   currency: z.string().min(1, "Currency is required"),
   totalBudget: z.number().min(0, "Total budget must be positive").optional(),
@@ -71,6 +73,7 @@ const SubmitProject = () => {
       skills: [],
       expertiseLevel: "",
       yourRole: "",
+      contractedAs: "",
       rateType: "",
       currency: "USD",
       totalBudget: undefined,
@@ -128,6 +131,7 @@ const SubmitProject = () => {
             skills: sanitizedData.skills,
             expertiseLevel: sanitizedData.expertiseLevel,
             yourRole: sanitizedData.yourRole,
+            contractedAs: sanitizedData.contractedAs,
             rateType: sanitizedData.rateType,
             currency: sanitizedData.currency,
             totalBudget: sanitizedData.totalBudget ?? null,
@@ -424,6 +428,25 @@ const SubmitProject = () => {
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
+                  <Label htmlFor="contractedAs">Contracted As *</Label>
+                  <Select onValueChange={(v) => form.setValue("contractedAs", v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CONTRACTED_AS.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {form.formState.errors.contractedAs && (
+                    <p className="text-sm text-destructive">{form.formState.errors.contractedAs.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="rateType">How Were You Paid? *</Label>
                   <Select onValueChange={(v) => form.setValue("rateType", v)}>
                     <SelectTrigger>
@@ -441,7 +464,9 @@ const SubmitProject = () => {
                     <p className="text-sm text-destructive">{form.formState.errors.rateType.message}</p>
                   )}
                 </div>
+              </div>
 
+              <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="currency">Currency *</Label>
                   <Select
@@ -464,17 +489,6 @@ const SubmitProject = () => {
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="totalBudget">Total Production Budget</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    placeholder="e.g. 50000"
-                    {...form.register("totalBudget", { setValueAs: (v) => v === "" || v === undefined ? undefined : Number(v) })}
-                  />
-                  <p className="text-xs text-muted-foreground">Optional — if you know the full project budget</p>
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="yourBudget">Your Fee / Budget *</Label>
                   <Input
                     type="number"
@@ -483,6 +497,17 @@ const SubmitProject = () => {
                     {...form.register("yourBudget", { valueAsNumber: true })}
                   />
                   <p className="text-xs text-muted-foreground">What you personally received</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="totalBudget">Total Production Budget</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    placeholder="e.g. 50000"
+                    {...form.register("totalBudget", { setValueAs: (v) => v === "" || v === undefined ? undefined : Number(v) })}
+                  />
+                  <p className="text-xs text-muted-foreground">Optional — if you know the full project budget</p>
                 </div>
 
                 <div className="space-y-2">

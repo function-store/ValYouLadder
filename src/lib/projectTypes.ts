@@ -32,6 +32,11 @@ export const PROJECT_LENGTHS = [
   { value: "6plus-months", label: "6+ months" },
 ] as const;
 
+export const CONTRACTED_AS = [
+  { value: "freelancer", label: "Freelancer / individual" },
+  { value: "studio", label: "Studio / company" },
+] as const;
+
 export const RATE_TYPES = [
   { value: "project", label: "Project fee (flat rate)" },
   { value: "daily", label: "Day rate" },
@@ -138,6 +143,7 @@ export interface ProjectSubmission {
   daysOfWork?: number;
   currency: string;
   rateType: string;
+  contractedAs?: string;
   yourRole: string;
   yearCompleted: number;
   description?: string;

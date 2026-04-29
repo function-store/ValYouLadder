@@ -15,6 +15,7 @@ import {
   EXPERTISE_LEVELS,
   YOUR_ROLES,
   RATE_TYPES,
+  CONTRACTED_AS,
   ProjectSubmission,
 } from "@/lib/projectTypes";
 import { triggerMailingListPopup } from "@/components/MailingListPopup";
@@ -91,6 +92,11 @@ const ProjectDetailDialog = ({ project, open, onOpenChange }: ProjectDetailDialo
               <Badge variant="outline" className="font-mono">
                 {getLabel(project.projectLength, PROJECT_LENGTHS)}
               </Badge>
+              {project.contractedAs && (
+                <Badge variant="outline" className="font-mono">
+                  {getLabel(project.contractedAs, CONTRACTED_AS)}
+                </Badge>
+              )}
             </div>
           </div>
 

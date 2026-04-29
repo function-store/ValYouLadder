@@ -1,7 +1,7 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
-// Approximate rates: 1 USD = X of this currency (indicative, not live)
-const RATES_FROM_USD: Record<string, number> = {
+// Fallback static rates (1 USD = X) used when API is unavailable
+const FALLBACK_RATES: Record<string, number> = {
   USD: 1,
   EUR: 0.92,
   GBP: 0.79,
@@ -16,11 +16,43 @@ const RATES_FROM_USD: Record<string, number> = {
   MXN: 17.5,
 };
 
-export const SELECTABLE_CURRENCIES = Object.keys(RATES_FROM_USD);
+export const SELECTABLE_CURRENCIES = Object.keys(FALLBACK_RATES);
 
-function convertAmount(amount: number, from: string, to: string): number {
-  const fromRate = RATES_FROM_USD[from] ?? 1;
-  const toRate = RATES_FROM_USD[to] ?? 1;
+const LS_CURRENCY_KEY = "valyouladder_currency";
+const LS_RATES_KEY = "valyouladder_rates";
+const RATES_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+interface RatesCache {
+  rates: Record<string, number>;
+  timestamp: number;
+}
+
+async function fetchRates(): Promise<Record<string, number>> {
+  const cached = localStorage.getItem(LS_RATES_KEY);
+  if (cached) {
+    const parsed: RatesCache = JSON.parse(cached);
+    if (Date.now() - parsed.timestamp < RATES_TTL_MS) {
+      return parsed.rates;
+    }
+  }
+
+  const res = await fetch("https://api.frankfurter.app/latest?from=USD");
+  if (!res.ok) throw new Error("rates fetch failed");
+  const data = await res.json();
+  const rates: Record<string, number> = { USD: 1, ...data.rates };
+
+  localStorage.setItem(LS_RATES_KEY, JSON.stringify({ rates, timestamp: Date.now() }));
+  return rates;
+}
+
+function convertAmount(
+  amount: number,
+  from: string,
+  to: string,
+  rates: Record<string, number>
+): number {
+  const fromRate = rates[from] ?? 1;
+  const toRate = rates[to] ?? 1;
   return (amount / fromRate) * toRate;
 }
 
@@ -28,43 +60,52 @@ interface CurrencyContextValue {
   displayCurrency: string;
   setDisplayCurrency: (currency: string) => void;
   format: (amount: number | undefined | null, fromCurrency?: string) => string;
+  ratesLoading: boolean;
 }
 
 const CurrencyContext = createContext<CurrencyContextValue>({
   displayCurrency: "USD",
   setDisplayCurrency: () => {},
   format: (amount) => `$${amount ?? 0}`,
+  ratesLoading: false,
 });
-
-const LS_KEY = "valyouladder_currency";
 
 export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
   const [displayCurrency, setDisplayCurrencyState] = useState<string>(
-    () => localStorage.getItem(LS_KEY) ?? "USD"
+    () => localStorage.getItem(LS_CURRENCY_KEY) ?? "USD"
   );
+  const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
+  const [ratesLoading, setRatesLoading] = useState(true);
+
+  useEffect(() => {
+    fetchRates()
+      .then(setRates)
+      .catch(() => {/* silently keep fallback rates */})
+      .finally(() => setRatesLoading(false));
+  }, []);
 
   const setDisplayCurrency = (currency: string) => {
-    localStorage.setItem(LS_KEY, currency);
+    localStorage.setItem(LS_CURRENCY_KEY, currency);
     setDisplayCurrencyState(currency);
   };
 
   const format = (amount: number | undefined | null, fromCurrency?: string): string => {
     if (amount == null) return "—";
     const from =
-      fromCurrency && fromCurrency !== "Other" && fromCurrency in RATES_FROM_USD
+      fromCurrency && fromCurrency !== "Other" && fromCurrency in rates
         ? fromCurrency
-        : displayCurrency;
+        : "USD";
     const converted =
-      from !== displayCurrency ? convertAmount(amount, from, displayCurrency) : amount;
+      from !== displayCurrency ? convertAmount(amount, from, displayCurrency, rates) : amount;
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: displayCurrency,
+      currency: displayCurrency in rates ? displayCurrency : "USD",
       maximumFractionDigits: 0,
     }).format(converted);
   };
 
   return (
-    <CurrencyContext.Provider value={{ displayCurrency, setDisplayCurrency, format }}>
+    <CurrencyContext.Provider value={{ displayCurrency, setDisplayCurrency, format, ratesLoading }}>
       {children}
     </CurrencyContext.Provider>
   );
