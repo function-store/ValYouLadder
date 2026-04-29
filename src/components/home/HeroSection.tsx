@@ -14,7 +14,7 @@ const HeroSection = () => {
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-4xl mx-auto text-center">
-          <PreProdBanner message="This is a preview of rate_ref. Data shown on this site is for demonstration purposes only and does not reflect real submissions." />
+          <PreProdBanner message="This is a preview of ValYouLadder. Data shown on this site is for demonstration purposes only and does not reflect real submissions." />
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary border border-border mb-8 animate-slide-up">
             <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
@@ -29,7 +29,7 @@ const HeroSection = () => {
 
           {/* Subheadline */}
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-slide-up" style={{ animationDelay: "0.2s" }}>
-            A community database of real project rates for VJs, TouchDesigner artists, and interactive installation creators. 
+            A community database of real project rates for VJs, TouchDesigner artists, and interactive installation creators.
             Submit anonymously, reference transparently.
           </p>
 

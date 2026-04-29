@@ -36,7 +36,7 @@ const CurrencyContext = createContext<CurrencyContextValue>({
   format: (amount) => `$${amount ?? 0}`,
 });
 
-const LS_KEY = "rateref_currency";
+const LS_KEY = "valyouladder_currency";
 
 export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
   const [displayCurrency, setDisplayCurrencyState] = useState<string>(

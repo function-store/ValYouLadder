@@ -92,7 +92,7 @@ const About = () => {
                   <span className="text-primary font-medium">DEREAL Studio</span> and an active educator who develops and shares tools for the creative-tech community.
                 </p>
                 <p>
-                  rate_ref grew out of a real frustration: the creative-tech industry has no shared language around rates. This tool is Dan's attempt to change that — built for the community, by the community.
+                  ValYouLadder grew out of a real frustration: the creative-tech industry has no shared language around rates. This tool is Dan's attempt to change that — built for the community, by the community.
                 </p>
               </div>
             </div>
@@ -108,7 +108,7 @@ const About = () => {
             </div>
             <div className="space-y-4 text-muted-foreground leading-relaxed mb-6">
               <p>
-                rate_ref is a community project run by{" "}
+                ValYouLadder is a community project run by{" "}
                 <span className="text-foreground font-medium">Function Store</span>. Keeping the
                 website up, the database running, and new features coming takes real money and time.
               </p>

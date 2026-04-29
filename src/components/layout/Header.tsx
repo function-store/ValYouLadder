@@ -29,10 +29,10 @@ const Header = () => {
         <div className="flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-md bg-primary/20 border border-primary/40 flex items-center justify-center">
-              <span className="text-lg leading-none">🍌</span>
+              <span className="text-lg leading-none">🪜</span>
             </div>
             <span className="font-mono font-semibold text-lg tracking-tight">
-              rate<span className="text-primary">_</span>ref
+              Val<span className="text-primary">You</span>Ladder
             </span>
           </Link>
 
