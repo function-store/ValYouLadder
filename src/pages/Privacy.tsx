@@ -3,7 +3,7 @@ import { Shield, Mail } from "lucide-react";
 
 const Privacy = () => {
   const lastUpdated = "April 28, 2026";
-  const contactEmail = "privacy@example.com"; // TODO: replace with your actual email
+  const contactEmail = "dan@functionstore.xyz";
 
   return (
     <Layout>
