@@ -209,12 +209,12 @@ const SubmitProject = () => {
           </div>
 
           {!SUBMISSIONS_OPEN && (
-            <div className="flex items-start gap-3 rounded-xl border border-border bg-secondary/50 p-4 mb-6">
-              <Lock className="h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
-              <div className="text-sm text-muted-foreground">
-                <span className="font-semibold text-foreground">Preview mode.</span>{" "}
+            <div className="w-full border border-yellow-500/40 bg-yellow-500/10 rounded-xl px-4 py-3 flex items-start gap-3 mb-8">
+              <Lock className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-yellow-500/90 leading-snug">
+                <span className="font-semibold font-mono">Preview mode — </span>
                 Submissions are not open yet. You can explore the form, but nothing will be saved.
-              </div>
+              </p>
             </div>
           )}
 
