@@ -43,6 +43,7 @@ export interface SimilarProject {
   currency?: string;
   yourRole?: string;
   contractedAs?: string;
+  rateRepresentativeness?: string;
   daysOfWork?: number;
   /** Similarity score used for ranking and weighted percentile calculation */
   similarityScore?: number;
@@ -109,6 +110,8 @@ const SimilarProjectsList = ({ projects, formatCurrency }: SimilarProjectsListPr
                   <p className="text-xs text-muted-foreground">
                     {project.location} • {project.yearCompleted}
                     {project.contractedAs && ` • ${project.contractedAs === "studio" ? "Studio" : "Freelancer"}`}
+                    {project.rateRepresentativeness === "below_market" && " • below market"}
+                    {project.rateRepresentativeness === "above_market" && " • above market"}
                   </p>
                 </div>
                 <div className="text-right">

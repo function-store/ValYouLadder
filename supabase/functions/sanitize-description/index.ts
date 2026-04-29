@@ -11,14 +11,16 @@ serve(async (req) => {
   }
 
   try {
-    const { description } = await req.json();
-    
+    let { description } = await req.json();
+
     if (!description || typeof description !== 'string') {
       return new Response(
         JSON.stringify({ sanitized: description || '', redactions: [] }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    description = description.slice(0, 500);
 
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {

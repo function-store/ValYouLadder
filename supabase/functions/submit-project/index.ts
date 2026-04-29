@@ -103,13 +103,15 @@ serve(async (req) => {
         expertise_level: body.expertiseLevel,
         your_role: body.yourRole,
         contracted_as: body.contractedAs || null,
+        rate_representativeness: body.rateRepresentativeness || null,
+        standard_rate: body.standardRate ?? null,
         rate_type: body.rateType,
         currency: body.currency,
         total_budget: body.totalBudget ?? null,
         your_budget: body.yourBudget,
         days_of_work: body.daysOfWork ?? null,
         year_completed: body.yearCompleted,
-        description: body.description || null,
+        description: body.description ? body.description.slice(0, 500) : null,
       })
       .select("id")
       .single();

@@ -29,6 +29,7 @@ import {
   YOUR_ROLES,
   CURRENCIES,
   CONTRACTED_AS,
+  RATE_REPRESENTATIVENESS,
 } from "@/lib/projectTypes";
 import { X } from "lucide-react";
 
@@ -47,6 +48,8 @@ interface ProjectSubmission {
   currency: string;
   rate_type: string | null;
   contracted_as: string | null;
+  rate_representativeness: string | null;
+  standard_rate: number | null;
   your_role: string | null;
   year_completed: number;
   description: string | null;
@@ -193,6 +196,37 @@ const AdminEditDialog = ({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Rate Representativeness</Label>
+              <Select
+                value={formData.rate_representativeness || ""}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, rate_representativeness: value || null }))
+                }
+              >
+                <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                <SelectContent>
+                  {RATE_REPRESENTATIVENESS.map((r) => (
+                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Standard Rate (optional)</Label>
+              <Input
+                type="number"
+                value={formData.standard_rate ?? ""}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    standard_rate: e.target.value === "" ? null : parseInt(e.target.value) || null,
+                  }))
+                }
+              />
             </div>
 
             <div className="space-y-2">

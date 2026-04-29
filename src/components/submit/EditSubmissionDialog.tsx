@@ -29,6 +29,7 @@ import {
   YOUR_ROLES,
   CURRENCIES,
   CONTRACTED_AS,
+  RATE_REPRESENTATIVENESS,
 } from "@/lib/projectTypes";
 
 export interface DBSubmission {
@@ -42,6 +43,8 @@ export interface DBSubmission {
   expertise_level: string;
   your_role: string | null;
   contracted_as: string | null;
+  rate_representativeness: string | null;
+  standard_rate: number | null;
   rate_type: string | null;
   currency: string;
   total_budget: number | null;
@@ -69,6 +72,10 @@ const EditSubmissionDialog = ({ submission, token, onSaved, onClose }: Props) =>
   const [expertiseLevel, setExpertiseLevel] = useState(submission.expertise_level);
   const [yourRole, setYourRole] = useState(submission.your_role ?? "");
   const [contractedAs, setContractedAs] = useState(submission.contracted_as ?? "");
+  const [rateRepresentativeness, setRateRepresentativeness] = useState(submission.rate_representativeness ?? "");
+  const [standardRate, setStandardRate] = useState(
+    submission.standard_rate != null ? String(submission.standard_rate) : ""
+  );
   const [rateType, setRateType] = useState(submission.rate_type ?? "");
   const [currency, setCurrency] = useState(submission.currency);
   const [totalBudget, setTotalBudget] = useState(
@@ -102,6 +109,8 @@ const EditSubmissionDialog = ({ submission, token, onSaved, onClose }: Props) =>
             expertise_level: expertiseLevel,
             your_role: yourRole || null,
             contracted_as: contractedAs || null,
+            rate_representativeness: rateRepresentativeness || null,
+            standard_rate: standardRate !== "" ? Number(standardRate) : null,
             rate_type: rateType || null,
             currency,
             total_budget: totalBudget !== "" ? Number(totalBudget) : null,
@@ -258,6 +267,29 @@ const EditSubmissionDialog = ({ submission, token, onSaved, onClose }: Props) =>
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label>Rate Representativeness</Label>
+              <Select value={rateRepresentativeness} onValueChange={setRateRepresentativeness}>
+                <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                <SelectContent>
+                  {RATE_REPRESENTATIVENESS.map((r) => (
+                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {(rateRepresentativeness === "below_market" || rateRepresentativeness === "above_market") && (
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Standard Rate <span className="text-muted-foreground font-normal">(what you'd normally charge)</span></Label>
+                <Input
+                  type="number"
+                  min={0}
+                  placeholder="e.g. 12000"
+                  value={standardRate}
+                  onChange={(e) => setStandardRate(e.target.value)}
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label>How Were You Paid?</Label>
               <Select value={rateType} onValueChange={setRateType}>

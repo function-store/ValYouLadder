@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,18 +7,64 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+const RATE_LIMIT = 5;
+const WINDOW_HOURS = 1;
+
+async function hashIp(ip: string): Promise<string> {
+  const data = new TextEncoder().encode(ip);
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { projectDetails, similarProjects } = await req.json();
+    const { projectDetails, similarProjects, statisticalEstimate } = await req.json();
 
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
       throw new Error("GEMINI_API_KEY is not configured");
+    }
+
+    // Rate limiting by hashed IP
+    const rawIp =
+      req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+      req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
+
+    const ipHash = await hashIp(rawIp);
+    const windowStart = new Date(
+      Date.now() - WINDOW_HOURS * 60 * 60 * 1000
+    ).toISOString();
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    const { count } = await supabase
+      .from("rate_limit_log")
+      .select("*", { count: "exact", head: true })
+      .eq("ip_hash", ipHash)
+      .gte("created_at", windowStart);
+
+    if ((count ?? 0) >= RATE_LIMIT) {
+      return new Response(
+        JSON.stringify({
+          error: "You've used your 5 AI estimates for this hour. Please try again later.",
+          code: "RATE_LIMITED",
+        }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     const systemPrompt = `You are an expert rate estimation assistant for creative technology projects (TouchDesigner, Notch, projection mapping, LED installations, live visuals, etc.).
@@ -50,7 +97,8 @@ Consider these factors:
 - Similar project budgets in the data (weighted by similarity score)
 - Project length when comparing budgets (a 6-month project budget is not comparable to a 1-day gig)
 - Rate structure: a day rate vs project fee vs retainer implies different total value
-- Role: solo operators carry full project risk; subcontractors typically earn less than leads`;
+- Role: solo operators carry full project risk; subcontractors typically earn less than leads
+- If a "Data-based percentile estimate" is provided in the user message, treat it as a strong directional anchor derived from the same similar-project data you see. Your low/mid/high should stay in that ballpark unless you have a clear qualitative reason to deviate (e.g. the project description reveals unusual scope, the currency mix is skewed, or expertise level signals a premium market)`;
 
     const userPrompt = `Project Details:
 - Type: ${projectDetails.projectType}
@@ -72,6 +120,9 @@ ${similarProjects
       `${i + 1}. [score:${p.similarityScore?.toFixed(1) ?? "N/A"}] ${p.projectType} for ${p.clientType} in ${p.location} - ${p.currency ?? "USD"} ${p.budget} (${p.expertiseLevel}, ${p.projectLength}${p.yourRole ? `, ${p.yourRole}` : ""})`
   )
   .join("\n")}
+${statisticalEstimate
+  ? `\nData-based percentile estimate (p25 / p50 / p75 of similarity-weighted, inflation-adjusted daily rates scaled to this project's duration — mixed currencies, treat as directional anchor): $${statisticalEstimate.low.toLocaleString()} / $${statisticalEstimate.mid.toLocaleString()} / $${statisticalEstimate.high.toLocaleString()}`
+  : ""}
 
 Based on this data, provide your rate estimate in USD.`;
 
@@ -113,13 +164,16 @@ Based on this data, provide your rate estimate in USD.`;
       throw new Error("No content in AI response");
     }
 
-    // Parse the JSON from the response
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error("Could not parse JSON from AI response");
     }
 
     const estimate = JSON.parse(jsonMatch[0]);
+
+    // Log this request and clean up expired entries
+    await supabase.from("rate_limit_log").insert({ ip_hash: ipHash });
+    supabase.from("rate_limit_log").delete().lt("created_at", windowStart).then(() => {});
 
     return new Response(JSON.stringify(estimate), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

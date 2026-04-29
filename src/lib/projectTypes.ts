@@ -37,6 +37,12 @@ export const CONTRACTED_AS = [
   { value: "studio", label: "Studio / company" },
 ] as const;
 
+export const RATE_REPRESENTATIVENESS = [
+  { value: "standard", label: "Standard — my typical rate" },
+  { value: "below_market", label: "Below market — discounted (passion / friend / portfolio)" },
+  { value: "above_market", label: "Above market — premium (rush / prestige / difficult)" },
+] as const;
+
 export const RATE_TYPES = [
   { value: "project", label: "Project fee (flat rate)" },
   { value: "daily", label: "Day rate" },
@@ -144,6 +150,8 @@ export interface ProjectSubmission {
   currency: string;
   rateType: string;
   contractedAs?: string;
+  rateRepresentativeness?: string;
+  standardRate?: number;
   yourRole: string;
   yearCompleted: number;
   description?: string;

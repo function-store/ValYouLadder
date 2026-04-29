@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Calculator } from "lucide-react";
@@ -39,10 +39,15 @@ interface DatabaseProject {
   rate_type: string | null;
   your_role: string | null;
   contracted_as: string | null;
+  rate_representativeness: string | null;
+  standard_rate: number | null;
   days_of_work: number | null;
   year_completed: number;
   description: string | null;
 }
+
+const AI_COOLDOWN_KEY = "vyl_ai_estimate_ts";
+const AI_COOLDOWN_SECONDS = 60;
 
 const Estimate = () => {
   const { format: formatCurrencyFn } = useCurrency();
@@ -71,6 +76,18 @@ const Estimate = () => {
     dataConfidence?: "high" | "medium" | "low";
   } | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [aiCooldownRemaining, setAiCooldownRemaining] = useState(0);
+
+  useEffect(() => {
+    const tick = () => {
+      const last = parseInt(localStorage.getItem(AI_COOLDOWN_KEY) ?? "0", 10);
+      const elapsed = Math.floor((Date.now() - last) / 1000);
+      setAiCooldownRemaining(Math.max(0, AI_COOLDOWN_SECONDS - elapsed));
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const toggleSkill = (skill: string) => {
     setSelectedSkills((prev) =>
@@ -178,21 +195,44 @@ const Estimate = () => {
       location: project.project_location,
       skills: project.skills,
       expertiseLevel: project.expertise_level,
-      budget: project.your_budget,
+      budget: resolvedBudget(project),
       yearCompleted: project.year_completed,
       description: project.description || undefined,
       clientCountry: project.client_country || undefined,
       currency: project.currency,
       yourRole: project.your_role || undefined,
       contractedAs: project.contracted_as || undefined,
+      rateRepresentativeness: project.rate_representativeness || undefined,
       daysOfWork: project.days_of_work ?? undefined,
       similarityScore: score,
       effectiveRate: computeEffectiveRate(project),
     }));
 
-    const weights = topMatches.map(({ score }) => score);
+    const weights = topMatches.map(({ score, project }) =>
+      score * representativenessWeight(project)
+    );
 
     return { projects, weights };
+  };
+
+  /**
+   * Returns the budget signal to use for estimation.
+   * Prefers standard_rate when provided (explicitly reported market rate),
+   * otherwise falls back to your_budget.
+   */
+  const resolvedBudget = (project: DatabaseProject): number =>
+    project.standard_rate ?? project.your_budget;
+
+  /**
+   * Weight multiplier based on how representative the rate is.
+   * If standard_rate is provided it's already a clean market signal → full weight.
+   * Otherwise penalize below/above market entries.
+   */
+  const representativenessWeight = (project: DatabaseProject): number => {
+    if (project.standard_rate != null) return 1.0;
+    if (project.rate_representativeness === "below_market") return 0.5;
+    if (project.rate_representativeness === "above_market") return 0.85;
+    return 1.0;
   };
 
   /**
@@ -200,7 +240,7 @@ const Estimate = () => {
    */
   const computeEffectiveRate = (project: DatabaseProject): number => {
     const durationDays = DURATION_DAYS[project.project_length] || 15;
-    return project.your_budget / durationDays;
+    return resolvedBudget(project) / durationDays;
   };
 
   /**
@@ -285,7 +325,15 @@ const Estimate = () => {
       const sampleSize = similarProjects.length;
 
       if (useAI) {
+        if (aiCooldownRemaining > 0) {
+          toast.error(`Please wait ${aiCooldownRemaining}s before requesting another AI estimate.`);
+          setIsCalculating(false);
+          return;
+        }
+
         try {
+          const statResult = calculateFromRealData(similarProjects, weights);
+
           const { data, error } = await supabase.functions.invoke(
             "estimate-rate",
             {
@@ -302,6 +350,9 @@ const Estimate = () => {
                   description: description || undefined,
                 },
                 similarProjects,
+                statisticalEstimate: statResult
+                  ? { low: statResult.low, mid: statResult.mid, high: statResult.high }
+                  : undefined,
               },
             }
           );
@@ -336,9 +387,16 @@ const Estimate = () => {
 
           await saveEstimateToDatabase(estimates, sampleSize, true);
 
+          localStorage.setItem(AI_COOLDOWN_KEY, Date.now().toString());
           toast.success("AI analysis complete!");
         } catch (error) {
           console.error("AI estimation error:", error);
+
+          if ((error as any)?.context?.status === 429) {
+            toast.error("You've used your 5 AI estimates for this hour. Try again later, or use the data-only estimate.");
+            setIsCalculating(false);
+            return;
+          }
 
           const result = calculateFromRealData(similarProjects, weights);
           if (!result) {
@@ -481,7 +539,7 @@ const Estimate = () => {
                 size="xl"
                 className="w-full gap-2"
                 onClick={calculateEstimate}
-                disabled={!canCalculate || isCalculating}
+                disabled={!canCalculate || isCalculating || (useAI && aiCooldownRemaining > 0)}
               >
                 {useAI ? (
                   <Sparkles className="h-5 w-5" />
@@ -492,6 +550,8 @@ const Estimate = () => {
                   ? useAI
                     ? "AI Analyzing..."
                     : "Calculating..."
+                  : useAI && aiCooldownRemaining > 0
+                  ? `Wait ${aiCooldownRemaining}s`
                   : useAI
                   ? "Get AI Estimate"
                   : "Calculate Estimate"}

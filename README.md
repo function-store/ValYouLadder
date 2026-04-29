@@ -90,6 +90,8 @@ The following columns were added directly (no migration file, dev mode):
 ```sql
 ALTER TABLE public.project_submissions ADD COLUMN IF NOT EXISTS days_of_work INTEGER;
 ALTER TABLE public.project_submissions ADD COLUMN IF NOT EXISTS contracted_as TEXT;
+ALTER TABLE public.project_submissions ADD COLUMN IF NOT EXISTS rate_representativeness TEXT;
+ALTER TABLE public.project_submissions ADD COLUMN IF NOT EXISTS standard_rate INTEGER;
 ```
 
 ### Edge functions
@@ -187,6 +189,8 @@ public/
 | `expertise_level` | TEXT | junior / mid / senior / expert |
 | `your_role` | TEXT | solo / lead / key-contributor / subcontractor |
 | `contracted_as` | TEXT | freelancer / studio — who the client contracted with |
+| `rate_representativeness` | TEXT | nullable — standard / below_market / above_market |
+| `standard_rate` | INTEGER | nullable — what the submitter would normally charge (when below/above market) |
 | `rate_type` | TEXT | project / daily / hourly / retainer |
 | `currency` | TEXT | ISO code, default USD |
 | `your_budget` | INTEGER | what the submitter personally received |
@@ -201,9 +205,10 @@ public/
 
 ## Key features
 
-- **Estimation engine:** IDF-weighted skill similarity, recency-adjusted daily rates, weighted percentile calculations
-- **AI enhancement:** Optional Gemini-powered estimation that considers similar project data
+- **Estimation engine:** IDF-weighted skill similarity, recency-adjusted daily rates, weighted percentile calculations (p25/p50/p75)
+- **AI enhancement:** Optional Gemini 2.5 Flash estimation. The statistical estimate (p25/p50/p75) is pre-computed from community data and passed to Gemini as a grounding anchor, keeping AI output consistent with the data-driven range while allowing qualitative adjustments for scope, expertise, or market context
 - **Implied day rate:** When `days_of_work` is provided, displayed as a subtext on database cards, detail dialogs, and similar project results — computed as `your_budget / days_of_work`
+- **Rate representativeness:** Submitters flag whether a rate was standard / below market / above market. Below-market rates get 0.5× weight in the algorithm; above-market 0.85×. Submitters can optionally provide their standard rate, which always gets full weight (1.0×) and is used in place of `your_budget` for estimation.
 - **Freelancer vs studio split:** `contracted_as` field distinguishes who the client contracted with, enabling rate comparisons across commercial structures
 - **Currency selector:** Live exchange rates via frankfurter.app, cached 1hr in localStorage, displayed in header
 - **Anonymous submissions:** No account required — edit token stored in browser localStorage and optionally emailed

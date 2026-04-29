@@ -236,9 +236,13 @@ const EstimateForm = ({
           <Textarea
             placeholder="Describe your project scope, deliverables, complexity, timeline constraints, or any other relevant details..."
             value={description || ""}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={(e) => setDescription(e.target.value.slice(0, 500))}
             className="min-h-[100px] font-mono text-sm"
+            maxLength={500}
           />
+          <p className={`text-xs text-right ${(description?.length ?? 0) >= 450 ? "text-yellow-500" : "text-muted-foreground"}`}>
+            {description?.length ?? 0} / 500
+          </p>
         </div>
       )}
     </div>

@@ -26,6 +26,7 @@ import {
   YOUR_ROLES,
   CURRENCIES,
   CONTRACTED_AS,
+  RATE_REPRESENTATIVENESS,
 } from "@/lib/projectTypes";
 import { validateDescription, sanitizeDescriptionWithAI } from "@/lib/sanitizeSubmission";
 import VerificationStep from "@/components/submit/VerificationStep";
@@ -46,8 +47,10 @@ const formSchema = z.object({
   totalBudget: z.number().min(0, "Total budget must be positive").optional(),
   yourBudget: z.number().min(0, "Your budget must be positive"),
   daysOfWork: z.number().min(1).optional(),
+  rateRepresentativeness: z.string().min(1, "Required"),
+  standardRate: z.number().min(0).optional(),
   yearCompleted: z.number().min(2000).max(new Date().getFullYear()),
-  description: z.string().optional(),
+  description: z.string().max(500).optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -79,6 +82,8 @@ const SubmitProject = () => {
       yourRole: "",
       contractedAs: "",
       rateType: "",
+      rateRepresentativeness: "",
+      standardRate: undefined,
       currency: "USD",
       totalBudget: undefined,
       yourBudget: 0,
@@ -86,6 +91,8 @@ const SubmitProject = () => {
       description: "",
     },
   });
+
+  const rateRepresentativeness = form.watch("rateRepresentativeness");
 
   const toggleSkill = (skill: string) => {
     const updated = selectedSkills.includes(skill)
@@ -136,6 +143,8 @@ const SubmitProject = () => {
             expertiseLevel: sanitizedData.expertiseLevel,
             yourRole: sanitizedData.yourRole,
             contractedAs: sanitizedData.contractedAs,
+            rateRepresentativeness: sanitizedData.rateRepresentativeness,
+            standardRate: sanitizedData.standardRate ?? null,
             rateType: sanitizedData.rateType,
             currency: sanitizedData.currency,
             totalBudget: sanitizedData.totalBudget ?? null,
@@ -528,6 +537,47 @@ const SubmitProject = () => {
                   <p className="text-xs text-muted-foreground">Total working days you personally put in</p>
                 </div>
               </div>
+
+              <div className="space-y-2">
+                <Label>Does this rate reflect your standard pricing? *</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {RATE_REPRESENTATIVENESS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        form.setValue("rateRepresentativeness", opt.value);
+                        if (opt.value === "standard") form.setValue("standardRate", undefined);
+                      }}
+                      className={`px-3 py-2.5 rounded-md text-sm text-left transition-all border ${
+                        rateRepresentativeness === opt.value
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-secondary text-secondary-foreground border-border hover:bg-secondary/80"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                {form.formState.errors.rateRepresentativeness && (
+                  <p className="text-sm text-destructive">{form.formState.errors.rateRepresentativeness.message}</p>
+                )}
+              </div>
+
+              {(rateRepresentativeness === "below_market" || rateRepresentativeness === "above_market") && (
+                <div className="space-y-2">
+                  <Label htmlFor="standardRate">
+                    What would your standard rate have been? <span className="text-muted-foreground font-normal">(optional)</span>
+                  </Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    placeholder="e.g. 20000"
+                    {...form.register("standardRate", { setValueAs: (v) => v === "" || v === undefined ? undefined : Number(v) })}
+                  />
+                  <p className="text-xs text-muted-foreground">Helps calibrate estimates for others — not shown publicly as your identity</p>
+                </div>
+              )}
             </div>
 
             {/* Additional Notes */}
@@ -535,13 +585,19 @@ const SubmitProject = () => {
               <h2 className="font-mono font-semibold text-lg border-b border-border pb-3">Additional Notes</h2>
               <Textarea
                 placeholder="Any additional context about the project (optional)"
-                onChange={(e) => handleDescriptionChange(e.target.value)}
+                onChange={(e) => handleDescriptionChange(e.target.value.slice(0, 500))}
                 className="min-h-[100px]"
+                maxLength={500}
               />
-              <p className="text-xs text-muted-foreground">
-                Please don't include any identifying information about the client or yourself.
-                Any detected names, URLs, or identifiers will be automatically redacted.
-              </p>
+              <div className="flex items-start justify-between gap-4">
+                <p className="text-xs text-muted-foreground">
+                  Please don't include any identifying information about the client or yourself.
+                  Any detected names, URLs, or identifiers will be automatically redacted.
+                </p>
+                <p className={`text-xs shrink-0 ${(form.watch("description")?.length ?? 0) >= 450 ? "text-yellow-500" : "text-muted-foreground"}`}>
+                  {form.watch("description")?.length ?? 0} / 500
+                </p>
+              </div>
               {descriptionWarnings.length > 0 && (
                 <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
                   <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
