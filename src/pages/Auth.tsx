@@ -41,7 +41,6 @@ const Auth = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
 
     if (!validateInput()) return;
 
@@ -57,30 +56,6 @@ const Auth = () => {
       }
     } else {
       navigate("/admin");
-    }
-  };
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(null);
-
-    if (!validateInput()) return;
-
-    setIsSubmitting(true);
-    const { error } = await signUp(email, password);
-    setIsSubmitting(false);
-
-    if (error) {
-      if (error.message.includes("already registered")) {
-        setError("This email is already registered. Please sign in instead.");
-      } else {
-        setError(error.message);
-      }
-    } else {
-      setSuccess("Account created! You can now sign in.");
-      setEmail("");
-      setPassword("");
     }
   };
 

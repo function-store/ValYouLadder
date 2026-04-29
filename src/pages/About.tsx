@@ -1,5 +1,10 @@
+import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
-import { Target, Users, TrendingUp, Shield, Heart, Mail } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Target, Users, TrendingUp, Shield, Heart, Mail, ArrowRight } from "lucide-react";
+import NewsletterSignup from "@/components/NewsletterSignup";
+
+const SUBMISSIONS_OPEN = false;
 
 const About = () => {
   return (
@@ -143,9 +148,30 @@ const About = () => {
             <p className="text-muted-foreground mb-4">
               Help build a more transparent industry by contributing your project data.
             </p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground mb-6">
               Every submission strengthens the database and helps fellow professionals negotiate fair rates.
             </p>
+
+            {SUBMISSIONS_OPEN ? (
+              <Link to="/submit">
+                <Button variant="glow" className="gap-2 group mb-8">
+                  Submit a Project
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </Link>
+            ) : (
+              <div className="mb-8">
+                <Button disabled className="gap-2 opacity-50 cursor-not-allowed">
+                  Submit a Project
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2 font-mono">Submissions opening soon</p>
+              </div>
+            )}
+
+            <div className="border-t border-border pt-6">
+              <p className="text-sm text-muted-foreground mb-4">Get notified when submissions open</p>
+              <NewsletterSignup />
+            </div>
           </section>
         </div>
       </div>
