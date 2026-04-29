@@ -42,6 +42,7 @@ interface ProjectSubmission {
   expertise_level: string;
   total_budget: number | null;
   your_budget: number;
+  days_of_work: number | null;
   currency: string;
   rate_type: string | null;
   your_role: string | null;
@@ -313,6 +314,21 @@ const AdminEditDialog = ({
                   setFormData((prev) => ({
                     ...prev,
                     total_budget: e.target.value === "" ? null : parseInt(e.target.value) || 0,
+                  }))
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Days of Work (optional)</Label>
+              <Input
+                type="number"
+                min={1}
+                value={formData.days_of_work ?? ""}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    days_of_work: e.target.value === "" ? null : parseInt(e.target.value) || null,
                   }))
                 }
               />

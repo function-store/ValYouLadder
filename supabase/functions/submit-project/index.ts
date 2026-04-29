@@ -58,6 +58,7 @@ serve(async (req) => {
         currency: body.currency,
         total_budget: body.totalBudget ?? null,
         your_budget: body.yourBudget,
+        days_of_work: body.daysOfWork ?? null,
         year_completed: body.yearCompleted,
         description: body.description || null,
       })

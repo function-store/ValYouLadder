@@ -16,6 +16,7 @@ import {
 import ProjectDetailDialog from "@/components/database/ProjectDetailDialog";
 import { sanitizeDescription } from "@/lib/sanitizeSubmission";
 import { supabase } from "@/integrations/supabase/client";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 const Database = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -63,6 +64,7 @@ const Database = () => {
               currency: row.currency,
               rateType: row.rate_type ?? undefined,
               yourRole: row.your_role ?? undefined,
+              daysOfWork: row.days_of_work ?? undefined,
               yearCompleted: row.year_completed,
               description: row.description ?? undefined,
             }))
@@ -119,13 +121,7 @@ const Database = () => {
     return data;
   }, [projects, searchTerm, filterProjectType, filterClientType, sortBy, sortOrder]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+  const { format: formatCurrency } = useCurrency();
 
   const getLabel = (value: string, options: readonly { value: string; label: string }[]) => {
     return options.find((o) => o.value === value)?.label || value;
@@ -255,8 +251,13 @@ const Database = () => {
                       <DollarSign className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <div className="text-2xl font-mono font-bold text-primary">{formatCurrency(project.yourBudget)}</div>
+                      <div className="text-2xl font-mono font-bold text-primary">{formatCurrency(project.yourBudget, project.currency)}</div>
                       <div className="text-xs text-muted-foreground">Your fee</div>
+                      {project.daysOfWork && project.daysOfWork > 0 && (
+                        <div className="text-xs text-muted-foreground/70 font-mono">
+                          ≈ {project.currency} {Math.round(project.yourBudget / project.daysOfWork).toLocaleString()}/day
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -301,7 +302,7 @@ const Database = () => {
                     </div>
 
                     <div className="flex flex-wrap gap-4 text-xs text-muted-foreground pt-2 border-t border-border">
-                      {project.totalBudget != null && <span>Total budget: {formatCurrency(project.totalBudget)}</span>}
+                      {project.totalBudget != null && <span>Total budget: {formatCurrency(project.totalBudget, project.currency)}</span>}
                       {project.yourRole && <span>Role: {project.yourRole}</span>}
                       <span>Experience: {getLabel(project.expertiseLevel, EXPERTISE_LEVELS)}</span>
                       <span>Location: {project.projectLocation}</span>

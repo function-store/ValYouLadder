@@ -71,7 +71,7 @@ serve(async (req) => {
         "project_type", "client_type", "project_length", "client_country",
         "project_location", "skills", "expertise_level", "your_role",
         "rate_type", "currency", "total_budget", "your_budget",
-        "year_completed", "description",
+        "days_of_work", "year_completed", "description",
       ];
 
       const sanitized: Record<string, unknown> = {};

@@ -11,7 +11,7 @@ interface EstimateResultsProps {
     similarProjects: SimilarProject[];
     dataConfidence?: "high" | "medium" | "low";
   } | null;
-  formatCurrency: (amount: number) => string;
+  formatCurrency: (amount: number, currency?: string) => string;
   aiInsights?: {
     reasoning: string;
     confidenceLevel: string;

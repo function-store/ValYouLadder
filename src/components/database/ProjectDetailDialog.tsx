@@ -18,6 +18,7 @@ import {
   ProjectSubmission,
 } from "@/lib/projectTypes";
 import { triggerMailingListPopup } from "@/components/MailingListPopup";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface ProjectDetailDialogProps {
   project: ProjectSubmission | null;
@@ -29,16 +30,9 @@ const getLabel = (value: string, options: readonly { value: string; label: strin
   return options.find((o) => o.value === value)?.label || value;
 };
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
-
 const ProjectDetailDialog = ({ project, open, onOpenChange }: ProjectDetailDialogProps) => {
   const triggered = useRef(false);
+  const { format: formatCurrency } = useCurrency();
 
   useEffect(() => {
     if (open && !triggered.current) {
@@ -69,14 +63,14 @@ const ProjectDetailDialog = ({ project, open, onOpenChange }: ProjectDetailDialo
               <DollarSign className="h-6 w-6 text-primary" />
               <div>
                 <div className="text-2xl font-mono font-bold text-primary">
-                  {formatCurrency(project.yourBudget)}
+                  {formatCurrency(project.yourBudget, project.currency)}
                 </div>
                 <div className="text-xs text-muted-foreground">Your fee</div>
               </div>
             </div>
             <div className="text-right">
               <div className="text-lg font-mono text-muted-foreground">
-                {formatCurrency(project.totalBudget)}
+                {formatCurrency(project.totalBudget, project.currency)}
               </div>
               <div className="text-xs text-muted-foreground">Total budget</div>
             </div>
@@ -203,6 +197,15 @@ const ProjectDetailDialog = ({ project, open, onOpenChange }: ProjectDetailDialo
                   <div className="font-mono font-bold">
                     {getLabel(project.rateType, RATE_TYPES)}
                   </div>
+                </div>
+              )}
+              {project.daysOfWork && project.daysOfWork > 0 && (
+                <div className="p-3 rounded-lg bg-secondary/50 border border-border">
+                  <div className="text-muted-foreground text-xs font-mono mb-1">Implied Day Rate</div>
+                  <div className="font-mono font-bold">
+                    {project.currency} {Math.round(project.yourBudget / project.daysOfWork).toLocaleString()}
+                  </div>
+                  <div className="text-muted-foreground text-xs">{project.daysOfWork} day{project.daysOfWork !== 1 ? "s" : ""} worked</div>
                 </div>
               )}
             </div>

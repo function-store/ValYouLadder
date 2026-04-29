@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import PrivacyConsentCheckbox from "@/components/gdpr/PrivacyConsentCheckbox";
 import { triggerMailingListPopup } from "@/components/MailingListPopup";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   DURATION_DAYS,
   MIN_SIMILARITY_THRESHOLD,
@@ -36,11 +37,13 @@ interface DatabaseProject {
   currency: string;
   rate_type: string | null;
   your_role: string | null;
+  days_of_work: number | null;
   year_completed: number;
   description: string | null;
 }
 
 const Estimate = () => {
+  const { format: formatCurrencyFn } = useCurrency();
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [projectType, setProjectType] = useState("");
   const [clientType, setClientType] = useState("");
@@ -179,6 +182,7 @@ const Estimate = () => {
       clientCountry: project.client_country || undefined,
       currency: project.currency,
       yourRole: project.your_role || undefined,
+      daysOfWork: project.days_of_work ?? undefined,
       similarityScore: score,
       effectiveRate: computeEffectiveRate(project),
     }));
@@ -390,13 +394,7 @@ const Estimate = () => {
     setTimeout(triggerMailingListPopup, 2000);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+  const formatCurrency = (amount: number, currency?: string) => formatCurrencyFn(amount, currency);
 
   const canCalculate =
     projectType &&

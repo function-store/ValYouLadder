@@ -135,6 +135,7 @@ export interface ProjectSubmission {
   expertiseLevel: string;
   totalBudget?: number | null;
   yourBudget: number;
+  daysOfWork?: number;
   currency: string;
   rateType: string;
   yourRole: string;

@@ -53,6 +53,7 @@ interface ProjectSubmission {
   expertise_level: string;
   total_budget: number | null;
   your_budget: number;
+  days_of_work: number | null;
   currency: string;
   rate_type: string | null;
   your_role: string | null;
@@ -182,6 +183,7 @@ const Admin = () => {
             expertise_level: updated.expertise_level,
             total_budget: updated.total_budget,
             your_budget: updated.your_budget,
+            days_of_work: updated.days_of_work,
             currency: updated.currency,
             rate_type: updated.rate_type,
             your_role: updated.your_role,

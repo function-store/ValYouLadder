@@ -42,6 +42,7 @@ export interface SimilarProject {
   clientCountry?: string;
   currency?: string;
   yourRole?: string;
+  daysOfWork?: number;
   /** Similarity score used for ranking and weighted percentile calculation */
   similarityScore?: number;
   /** Budget normalized to a daily effective rate */
@@ -115,6 +116,11 @@ const SimilarProjectsList = ({ projects, formatCurrency }: SimilarProjectsListPr
                   <div className="text-xs text-muted-foreground">
                     {getLabel(project.expertiseLevel, EXPERTISE_LEVELS)}
                   </div>
+                  {project.daysOfWork && project.daysOfWork > 0 && (
+                    <div className="text-xs text-muted-foreground/70 font-mono">
+                      ≈ {project.currency ?? ""} {Math.round(project.budget / project.daysOfWork).toLocaleString()}/day
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex flex-wrap gap-1.5">

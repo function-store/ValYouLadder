@@ -1,13 +1,16 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Database, FileText, Calculator, Menu, X, Folder } from "lucide-react";
 import { useState } from "react";
 import { hasStoredSubmissions } from "@/lib/mySubmissions";
+import { useCurrency, SELECTABLE_CURRENCIES } from "@/contexts/CurrencyContext";
 
 const Header = () => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const showMySubmissions = hasStoredSubmissions();
+  const { displayCurrency, setDisplayCurrency } = useCurrency();
 
   const navItems = [
     { path: "/", label: "Home", icon: null },
@@ -47,6 +50,18 @@ const Header = () => {
                 </Button>
               </Link>
             ))}
+            <Select value={displayCurrency} onValueChange={setDisplayCurrency}>
+              <SelectTrigger className="w-[72px] h-8 text-xs font-mono ml-2 border-border">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SELECTABLE_CURRENCIES.map((c) => (
+                  <SelectItem key={c} value={c} className="font-mono text-xs">
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </nav>
 
           {/* Mobile Menu Button */}

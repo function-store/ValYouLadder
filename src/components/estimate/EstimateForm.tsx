@@ -101,7 +101,15 @@ const EstimateForm = ({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Project Location</Label>
-              <Select value={projectLocation} onValueChange={setProjectLocation}>
+              <Select
+                value={projectLocation}
+                onValueChange={(v) => {
+                  if (!clientCountry || clientCountry === projectLocation) {
+                    setClientCountry(v);
+                  }
+                  setProjectLocation(v);
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Where?" />
                 </SelectTrigger>
@@ -132,6 +140,9 @@ const EstimateForm = ({
                   ))}
                 </SelectContent>
               </Select>
+              {clientCountry && clientCountry === projectLocation && (
+                <p className="text-xs text-muted-foreground">Same as project location</p>
+              )}
             </div>
           </div>
 

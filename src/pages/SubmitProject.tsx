@@ -42,6 +42,7 @@ const formSchema = z.object({
   currency: z.string().min(1, "Currency is required"),
   totalBudget: z.number().min(0, "Total budget must be positive").optional(),
   yourBudget: z.number().min(0, "Your budget must be positive"),
+  daysOfWork: z.number().min(1).optional(),
   yearCompleted: z.number().min(2000).max(new Date().getFullYear()),
   description: z.string().optional(),
 });
@@ -129,6 +130,7 @@ const SubmitProject = () => {
             currency: sanitizedData.currency,
             totalBudget: sanitizedData.totalBudget ?? null,
             yourBudget: sanitizedData.yourBudget,
+            daysOfWork: sanitizedData.daysOfWork ?? null,
             yearCompleted: sanitizedData.yearCompleted,
             description: sanitizedData.description || null,
           },
@@ -282,7 +284,17 @@ const SubmitProject = () => {
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="projectLocation">Project Location *</Label>
-                  <Select onValueChange={(v) => form.setValue("projectLocation", v)}>
+                  <Select
+                    value={form.watch("projectLocation")}
+                    onValueChange={(v) => {
+                      const prevProject = form.getValues("projectLocation");
+                      const currentClient = form.getValues("clientCountry");
+                      form.setValue("projectLocation", v);
+                      if (!currentClient || currentClient === prevProject) {
+                        form.setValue("clientCountry", v);
+                      }
+                    }}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Where was the project?" />
                     </SelectTrigger>
@@ -300,8 +312,14 @@ const SubmitProject = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="clientCountry">Client Origin <span className="text-muted-foreground font-normal">(optional)</span></Label>
-                  <Select onValueChange={(v) => form.setValue("clientCountry", v)}>
+                  <Label htmlFor="clientCountry">
+                    Client Origin{" "}
+                    <span className="text-muted-foreground font-normal">(optional)</span>
+                  </Label>
+                  <Select
+                    value={form.watch("clientCountry")}
+                    onValueChange={(v) => form.setValue("clientCountry", v)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Where is the client from?" />
                     </SelectTrigger>
@@ -313,6 +331,9 @@ const SubmitProject = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  {form.watch("clientCountry") && form.watch("clientCountry") === form.watch("projectLocation") && (
+                    <p className="text-xs text-muted-foreground">Same as project location</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -450,6 +471,17 @@ const SubmitProject = () => {
                     {...form.register("yourBudget", { valueAsNumber: true })}
                   />
                   <p className="text-xs text-muted-foreground">What you personally received</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="daysOfWork">Days of Work <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    placeholder="e.g. 15"
+                    {...form.register("daysOfWork", { setValueAs: (v) => v === "" || v === undefined ? undefined : Number(v) })}
+                  />
+                  <p className="text-xs text-muted-foreground">Total working days you personally put in</p>
                 </div>
               </div>
             </div>

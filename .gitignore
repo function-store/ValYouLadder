@@ -26,3 +26,4 @@ dist-ssr
 /.modus
 
 .vercel
+/supabase/.temp
