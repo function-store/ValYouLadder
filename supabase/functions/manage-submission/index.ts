@@ -31,9 +31,9 @@ serve(async (req) => {
       );
     }
 
-    if (!["edit", "delete"].includes(action)) {
+    if (!["edit", "delete", "verify"].includes(action)) {
       return new Response(
-        JSON.stringify({ error: "action must be 'edit' or 'delete'" }),
+        JSON.stringify({ error: "action must be 'edit', 'delete', or 'verify'" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -63,6 +63,14 @@ serve(async (req) => {
         JSON.stringify({ error: "Invalid token" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    if (action === "verify") {
+      // Token has already been verified above. Used by the recovery flow on
+      // /my-submissions to check (id, token) without mutating state.
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     if (action === "delete") {

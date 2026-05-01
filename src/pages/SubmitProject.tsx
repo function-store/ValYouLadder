@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -60,6 +60,48 @@ import { IS_PRE_PROD } from "@/lib/config";
 
 const SUBMISSIONS_OPEN = !IS_PRE_PROD;
 
+const DRAFT_STORAGE_KEY = "vyl_submit_draft_v1";
+const DRAFT_DEBOUNCE_MS = 600;
+
+interface DraftPayload {
+  form: Partial<FormData>;
+  selectedSkills: string[];
+  contactEmail: string;
+  sendEditLink: boolean;
+  newsletterOptIn: boolean;
+  privacyConsent: boolean;
+  savedAt: string;
+}
+
+function readDraft(): DraftPayload | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as DraftPayload;
+    if (!parsed || typeof parsed !== "object" || !parsed.form) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeDraft(payload: DraftPayload) {
+  try {
+    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    // Storage full / disabled — silently ignore. We don't want a draft-save
+    // failure to interrupt the user mid-form.
+  }
+}
+
+function clearDraft() {
+  try {
+    localStorage.removeItem(DRAFT_STORAGE_KEY);
+  } catch {
+    /* noop */
+  }
+}
+
 const SubmitProject = () => {
   const { toast } = useToast();
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
@@ -71,6 +113,8 @@ const SubmitProject = () => {
   const [contactEmail, setContactEmail] = useState("");
   const [sendEditLink, setSendEditLink] = useState(false);
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -96,6 +140,112 @@ const SubmitProject = () => {
   });
 
   const rateRepresentativeness = form.watch("rateRepresentativeness");
+
+  // ───────────────────────────────────────────────────────────────────────
+  // Draft persistence: restore on mount, debounced auto-save on changes,
+  // beforeunload guard while dirty, clear on successful submit.
+  // ───────────────────────────────────────────────────────────────────────
+
+  // Restore once on mount
+  useEffect(() => {
+    const draft = readDraft();
+    if (!draft) return;
+
+    if (draft.form) {
+      // reset() merges with defaults and resets dirty flags
+      form.reset({
+        ...form.getValues(),
+        ...draft.form,
+      });
+    }
+    if (Array.isArray(draft.selectedSkills)) {
+      setSelectedSkills(draft.selectedSkills);
+      form.setValue("skills", draft.selectedSkills);
+    }
+    if (typeof draft.contactEmail === "string") setContactEmail(draft.contactEmail);
+    if (typeof draft.sendEditLink === "boolean") setSendEditLink(draft.sendEditLink);
+    if (typeof draft.newsletterOptIn === "boolean") setNewsletterOptIn(draft.newsletterOptIn);
+    if (typeof draft.privacyConsent === "boolean") setPrivacyConsent(draft.privacyConsent);
+
+    setDraftRestored(true);
+    toast({
+      title: "We restored your draft",
+      description: "Your previous answers were saved on this device.",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Debounced save
+  const saveTimer = useRef<number | null>(null);
+  const watchedValues = form.watch();
+  useEffect(() => {
+    setIsDirty(true);
+    if (saveTimer.current !== null) {
+      window.clearTimeout(saveTimer.current);
+    }
+    saveTimer.current = window.setTimeout(() => {
+      writeDraft({
+        form: watchedValues,
+        selectedSkills,
+        contactEmail,
+        sendEditLink,
+        newsletterOptIn,
+        privacyConsent,
+        savedAt: new Date().toISOString(),
+      });
+    }, DRAFT_DEBOUNCE_MS);
+
+    return () => {
+      if (saveTimer.current !== null) {
+        window.clearTimeout(saveTimer.current);
+      }
+    };
+    // watchedValues is a new object each render; React diffs the referenced
+    // deps and skips noop runs.
+  }, [watchedValues, selectedSkills, contactEmail, sendEditLink, newsletterOptIn, privacyConsent]);
+
+  // beforeunload guard while we have unsaved (in-memory only) edits
+  useEffect(() => {
+    if (!isDirty || isSubmitted || isSubmitting) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      // Modern browsers ignore custom strings but require a returnValue
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty, isSubmitted, isSubmitting]);
+
+  const discardDraft = useCallback(() => {
+    clearDraft();
+    setDraftRestored(false);
+    form.reset({
+      projectType: "",
+      clientType: "",
+      projectLength: "",
+      clientCountry: "",
+      projectLocation: "",
+      skills: [],
+      expertiseLevel: "",
+      yourRole: "",
+      contractedAs: "",
+      rateType: "",
+      rateRepresentativeness: "",
+      standardRate: undefined,
+      currency: "USD",
+      totalBudget: undefined,
+      yourBudget: 0,
+      yearCompleted: new Date().getFullYear(),
+      description: "",
+    });
+    setSelectedSkills([]);
+    setContactEmail("");
+    setSendEditLink(false);
+    setNewsletterOptIn(false);
+    setPrivacyConsent(false);
+    setIsDirty(false);
+    toast({ title: "Draft discarded" });
+  }, [form, toast]);
 
   const toggleSkill = (skill: string) => {
     const updated = selectedSkills.includes(skill)
@@ -186,6 +336,10 @@ const SubmitProject = () => {
       if (fnError) throw fnError;
       addStoredSubmission(fnData.submissionId, fnData.token);
 
+      // Submission persisted server-side — we no longer need the local draft.
+      clearDraft();
+      setIsDirty(false);
+
       toast({
         title: "Project submitted!",
         description: redactions.length > 0
@@ -262,6 +416,23 @@ const SubmitProject = () => {
                 <span className="font-semibold font-mono">Preview mode — </span>
                 Submissions are not open yet. You can explore the form, but nothing will be saved.
               </p>
+            </div>
+          )}
+
+          {draftRestored && (
+            <div className="w-full border border-primary/30 bg-primary/5 rounded-xl px-4 py-3 flex items-center justify-between gap-3 mb-8">
+              <p className="text-sm text-muted-foreground leading-snug">
+                <span className="font-medium text-foreground">Draft restored.</span>{" "}
+                We loaded your previous answers from this device.
+              </p>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={discardDraft}
+              >
+                Discard draft
+              </Button>
             </div>
           )}
 

@@ -2,9 +2,19 @@ import { useState, useEffect, useCallback } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Pencil, Trash2, Loader2 } from "lucide-react";
+import { Pencil, Trash2, Loader2, KeyRound } from "lucide-react";
 import { getStoredSubmissions, addStoredSubmission, removeStoredSubmission } from "@/lib/mySubmissions";
 import EditSubmissionDialog, { DBSubmission } from "@/components/submit/EditSubmissionDialog";
 import {
@@ -28,6 +38,10 @@ const MySubmissions = () => {
   const [editTarget, setEditTarget] = useState<DBSubmission | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [restoredFromEmail, setRestoredFromEmail] = useState(false);
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
+  const [recoveryInput, setRecoveryInput] = useState("");
+  const [recoveryError, setRecoveryError] = useState<string | null>(null);
+  const [recoveryBusy, setRecoveryBusy] = useState(false);
 
   const fetchSubmissions = useCallback(async () => {
     const stored = getStoredSubmissions();
@@ -64,6 +78,71 @@ const MySubmissions = () => {
     }
     fetchSubmissions();
   }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+
+  /**
+   * Parse either:
+   *  - a full edit URL like https://.../my-submissions?id=...&token=...
+   *  - or two values "id, token" / "id token" / "id\ntoken"
+   */
+  const parseRecoveryInput = (raw: string): { id: string; token: string } | null => {
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+
+    // Try URL parse first (covers both full and relative URLs)
+    try {
+      const url = trimmed.includes("://") ? new URL(trimmed) : new URL(trimmed, "https://placeholder.local");
+      const id = url.searchParams.get("id");
+      const token = url.searchParams.get("token");
+      if (id && token) return { id, token };
+    } catch {
+      // fall through to plain-text parsing
+    }
+
+    const parts = trimmed.split(/[\s,]+/).filter(Boolean);
+    if (parts.length === 2) {
+      return { id: parts[0], token: parts[1] };
+    }
+    return null;
+  };
+
+  const handleRecoverySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRecoveryError(null);
+    const parsed = parseRecoveryInput(recoveryInput);
+    if (!parsed) {
+      setRecoveryError(
+        "Paste the full edit URL from your email, or both the submission id and token separated by a space."
+      );
+      return;
+    }
+
+    setRecoveryBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-submission", {
+        body: { submissionId: parsed.id, token: parsed.token, action: "verify" },
+      });
+
+      const status = (error as { context?: { status?: number } } | null)?.context?.status;
+      if (error || !data?.success || status === 401) {
+        setRecoveryError(
+          "That id + token combination didn't match anything. Double-check the link in your email."
+        );
+        return;
+      }
+
+      addStoredSubmission(parsed.id, parsed.token);
+      setRecoveryOpen(false);
+      setRecoveryInput("");
+      setRestoredFromEmail(true);
+      toast.success("Submission restored on this browser.");
+      await fetchSubmissions();
+    } catch (err) {
+      console.error("Recovery error:", err);
+      setRecoveryError("Something went wrong. Please try again or contact us.");
+    } finally {
+      setRecoveryBusy(false);
+    }
+  };
 
   const handleDelete = async (id: string) => {
     if (!window.confirm("Delete this submission? This cannot be undone.")) return;
@@ -117,13 +196,27 @@ const MySubmissions = () => {
           )}
 
           {submissions.length === 0 ? (
-            <div className="node-card rounded-xl p-12 border border-border text-center">
-              <p className="text-muted-foreground mb-6">
+            <div className="node-card rounded-xl p-12 border border-border text-center space-y-6">
+              <p className="text-muted-foreground">
                 No submissions found in this browser.
               </p>
-              <Link to="/submit">
-                <Button variant="glow">Submit a Project</Button>
-              </Link>
+              <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
+                <Link to="/submit">
+                  <Button variant="glow">Submit a Project</Button>
+                </Link>
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => setRecoveryOpen(true)}
+                >
+                  <KeyRound className="h-4 w-4" />
+                  Have an edit link from email?
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                If you submitted on another device or cleared this browser, paste the edit
+                link from your email to restore access.
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -206,9 +299,20 @@ const MySubmissions = () => {
             </div>
           )}
 
-          <p className="text-xs text-muted-foreground mt-8 text-center">
-            Ownership is tracked by this browser only. Clearing browser data will remove your ability to edit or delete submissions.
-          </p>
+          <div className="mt-8 flex flex-col items-center gap-3 text-xs text-muted-foreground text-center">
+            <p>
+              Ownership is tracked by this browser only. Clearing browser data will remove your ability to edit or delete submissions.
+            </p>
+            {submissions.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setRecoveryOpen(true)}
+                className="text-muted-foreground/80 hover:text-foreground underline-offset-4 hover:underline transition-colors"
+              >
+                Restore another submission from an email link
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -223,6 +327,41 @@ const MySubmissions = () => {
           onClose={() => setEditTarget(null)}
         />
       )}
+
+      <Dialog open={recoveryOpen} onOpenChange={setRecoveryOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Restore from email link</DialogTitle>
+            <DialogDescription>
+              Paste the full edit URL from your email, or both the submission id and the
+              token (separated by a space) into the box below.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleRecoverySubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="recovery-input">Edit link or id + token</Label>
+              <Input
+                id="recovery-input"
+                value={recoveryInput}
+                onChange={(e) => setRecoveryInput(e.target.value)}
+                placeholder="https://valyouladder.com/my-submissions?id=...&token=..."
+                autoFocus
+              />
+              {recoveryError && (
+                <p className="text-sm text-destructive">{recoveryError}</p>
+              )}
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setRecoveryOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={recoveryBusy}>
+                {recoveryBusy ? "Verifying…" : "Restore"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
