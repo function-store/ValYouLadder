@@ -2,14 +2,26 @@
 
 **Date:** 2026-05-01
 **Probed by:** orchestrator (mission `algorithm-scientific-review`, run 20)
-**Method:** Live queries against production Supabase (`ecflucezmmvzpereikik`), end-to-end algorithm runs on the real candidate pool, edge-function smoke test.
+**Method:** Live queries against production Supabase (`ecflucezmmvzpereikik`), end-to-end algorithm runs on the candidate pool, edge-function smoke test.
 **Probe scripts:** `context/probes/01–10`. All numbers below are reproducible from `context/probes/data.json` (snapshot of `project_submissions` taken 2026-05-01).
+
+---
+
+## Methodology caveat — the corpus is randomly generated mock data
+
+The 30 rows in production are a single seed batch loaded on 2026-04-27. Budgets, durations, locations, and skills were synthesised to populate the schema; none come from real freelancers. This affects how each finding below should be read:
+
+- **Structural claims** (a column doesn't exist; ESS-by-construction inflates with pool size; "one-off" semantically can't mean "one day") are independent of data realism and survive the mock-data caveat.
+- **Quantitative figures cited from probes** (e.g. "$8000/day median for one-off vs $556/day for medium — 14× spread"; "ESS distribution 16–25"; "top-10 vs top-20 changes p75 by 76%") are properties of the synthetic distribution, not measurements of real-world freelance rates. They illustrate how the algorithm behaves on the current data shape; they should not be treated as findings about the market.
+- **"Cannot empirically verify" findings (F9–F13)** are doubly limited: not just thin data but synthetic data. The variance-reduction test for `client_country` priority, for instance, was inconclusive partly because random mock data has no hidden correlation to detect — not just because n=30 is small.
+
+The two code-level fixes that shipped (F4/F5 duration-midpoint corrections, F6 confidence-gating) and the schema fix (F1) all rest primarily on structural or semantic arguments and are correct under the caveat. Quantitative re-derivation against real submissions should happen as the corpus grows.
 
 ---
 
 ## TL;DR
 
-The algorithm has been audited against the **real production database**. The most consequential finding is a **broken schema migration** — half the algorithm features described in `ALGORITHM.md` cannot fire because the columns they read don't exist. A second order of findings concerns calibration assumptions (ESS thresholds, legacy duration midpoints, scoring weights) that are out of step with what the data shows.
+The algorithm has been audited against the production database (currently a 30-row synthetic seed). The most consequential finding is a **broken schema migration** — half the algorithm features described in `ALGORITHM.md` cannot fire because the columns they read don't exist. A second order of findings concerns calibration assumptions (ESS thresholds, legacy duration midpoints, scoring weights) that are out of step with how the algorithm behaves on the current data shape.
 
 | # | Finding | Severity | Status |
 |---|---------|----------|--------|

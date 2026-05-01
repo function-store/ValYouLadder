@@ -12,7 +12,9 @@ The estimator is a **similarity-weighted percentile model**. It finds projects i
 
 ## Corpus state (as of 2026-05-01)
 
-The production database currently holds **30 seed records** loaded as a single batch on 2026-04-27 and **zero real submissions**. Every estimate the live algorithm returns therefore reflects the seed dataset's distribution, not organic community data. Confidence levels and percentile ranges should be interpreted with that caveat in mind until real submissions accumulate. The figures and caveats throughout this document refer to that 30-row corpus; once the corpus grows, several of the assumptions called out in the closing caveats section can be re-checked against actual data.
+The production database currently holds **30 randomly generated seed records** loaded as a single batch on 2026-04-27 and **zero real submissions**. The seed is mock data — budgets, durations, locations, and skills were synthesized to populate the schema, not collected from real freelancers. Every estimate the live algorithm returns therefore reflects this synthetic distribution, not community data.
+
+Any quantitative figure in this document that comes from a probe against the seed corpus (per-bucket median rates, ESS values, top-match score ranges, etc.) is **illustrative, not a measurement**. It demonstrates how the algorithm behaves on the current shape of the data; it does not characterise real-world freelance rates. The structural and semantic claims are independent of data realism — but the numbers that accompany them should be re-derived against organic submissions before being treated as findings about the market. Once real submissions accumulate, the assumptions called out in the closing caveats section can be re-checked against actual data and this preface revised.
 
 ---
 
