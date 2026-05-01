@@ -10,6 +10,12 @@ The estimator is a **similarity-weighted percentile model**. It finds projects i
 
 ---
 
+## Corpus state (as of 2026-05-01)
+
+The production database currently holds **30 seed records** loaded as a single batch on 2026-04-27 and **zero real submissions**. Every estimate the live algorithm returns therefore reflects the seed dataset's distribution, not organic community data. Confidence levels and percentile ranges should be interpreted with that caveat in mind until real submissions accumulate. The figures and caveats throughout this document refer to that 30-row corpus; once the corpus grows, several of the assumptions called out in the closing caveats section can be re-checked against actual data.
+
+---
+
 ## Step 1 — Candidate retrieval
 
 All approved submissions are fetched from `project_submissions`. There is no pre-filtering by project type or location at this stage — the similarity score handles relevance. This ensures the model degrades gracefully when the dataset is sparse.
@@ -30,7 +36,7 @@ Skills that appear in fewer submissions carry more weight when they do match —
 
 ## Step 3 — Similarity scoring
 
-Each candidate project is scored against the query. The maximum possible score is approximately **122** (all exact matches + full skill overlap + same-year recency).
+Each candidate project is scored against the query. The theoretical maximum score is approximately **122** (all exact matches + full skill overlap + same-year recency). In practice across the current corpus, top match scores observed in 6 representative queries ranged 47.9–84 (probe 06). Queries whose top match scores fall below ~60 cannot reach "high" confidence regardless of pool size — see Step 8.
 
 | Signal | Points |
 |--------|--------|
@@ -113,6 +119,23 @@ daily_rate = budget_usd / DURATION_DAYS[project_length]
 | 3–6 months | 90 |
 | 6+ months | 180 |
 
+#### Legacy duration values
+
+Older submissions (from earlier site versions that used a different vocabulary) are still ingested by the algorithm so that data is not lost. They map to days as follows:
+
+| Legacy category | Days | Rationale |
+|---|---|---|
+| `one-off` | 7 | Single deliverable ≈ 1 week of focused work |
+| `short` | 7 | Equivalent to `1-2-weeks` |
+| `medium` | 45 | Equivalent to `1-3-months` |
+| `long` | 120 | ~4 months (between 3-6mo and 6+mo) |
+| `performance` | 3 | 1 stage day + ~2 days prep |
+| `tour` | 30 | Mid-length engagement, n=1 in current data |
+| `installation-temp` | 30 | Average temporary install duration |
+| `installation-perm` | 60 | Permanent install with commissioning |
+
+`one-off` and `performance` were originally mapped to 1 day, which produced implausible per-day rates ($8000/day median for `one-off`, $3000/day for `performance` — 5–14× the rates in comparable buckets like `medium` at ~$556/day). Probe 07 showed the spread; the values above re-align legacy buckets with the rest of the distribution. See finding F4/F5 in `context/scientific-review-findings.md`.
+
 When `days_of_work` is provided by the submitter, it's displayed as an implied day rate on cards and detail views, but the duration-bucket normalization is used in the algorithm (for consistency across submissions that don't have it).
 
 **Inflation adjustment** — older projects are adjusted to current-year equivalents at 5% per year:
@@ -164,19 +187,39 @@ This gives the final **low / mid / high** range in the original currency mix of 
 
 ---
 
-## Step 8 — Confidence level (ESS)
+## Step 8 — Confidence level
 
-Rather than using raw sample size, confidence is computed from **Effective Sample Size (ESS)** — a measure that accounts for weight concentration. If one project dominates the weights, ESS is low even with many candidates.
+Confidence is computed by `confidenceFromMetrics(ess, topScore)` in `src/lib/estimateAlgorithm.ts`. It combines two signals:
 
-```
-ESS = (Σ weights)² / Σ(weight²)
-```
+1. **Effective Sample Size (ESS)** — accounts for weight concentration. If one project dominates the weights, ESS is low even with many candidates.
 
-| ESS | Confidence |
-|-----|------------|
+   ```
+   ESS = (Σ weights)² / Σ(weight²)
+   ```
+
+2. **Top match score** — the absolute similarity score of the single best-matching project in the pool, before any weight scaling.
+
+The two signals are combined as follows:
+
+| Confidence | Condition |
+|------------|-----------|
+| **high** | `ESS ≥ 8` AND `topScore ≥ 60` |
+| **medium** | `ESS ≥ 5` OR `topScore ≥ 40` |
+| **low** | otherwise |
+
+**Why ESS alone is insufficient.** ESS measures weight concentration, not match quality. Once the qualifying pool exceeds ~10 projects with weights in the 30–80 range, `(Σw)²/Σw²` is large by construction — even when no single project is a strong match. Probe 08 illustrates the failure: a niche query (Notch+UE expert performance UK) yielded ESS = 16.28 but a top match score of only 47.9, which the old ESS-only path reported as "high." The combined gate now correctly reports that query as "medium": the pool is statistically dense, but no individual match is strong enough to warrant high confidence.
+
+The two score floors come from probe 06 score-component analysis: 60 corresponds roughly to `project_type` (20) + `client_type` (25) + ≥2/3 of the skill-weight budget — i.e. a "genuine" match; 40 corresponds to `project_type` + half-skill + recency — i.e. a "partial" match.
+
+**Deprecated path.** The earlier ESS-only function `essToConfidence(ess)` is retained in the codebase under `@deprecated` for backward compatibility but is no longer called by the estimate pipeline. Its thresholds — kept here for reference — were:
+
+| ESS | Confidence (deprecated) |
+|-----|--------------------------|
 | ≥ 8 | High |
 | ≥ 5 | Medium |
 | < 5 | Low |
+
+These remain useful only as a reference for the ESS component in isolation; the live confidence value comes from `confidenceFromMetrics`.
 
 ---
 
@@ -192,6 +235,14 @@ Rate limiting: 5 AI estimates per IP per hour.
 
 ## What the algorithm does not currently do
 
-- **Historical exchange rates** — budgets are converted to USD at today's exchange rate, not the rate at the time of the project. Combined with the 5% inflation adjustment, this is a reasonable approximation for recent projects but introduces some inaccuracy for older submissions in volatile currencies.
+This section lists known limitations and unverified assumptions. They are not bugs — they are design choices whose empirical justification cannot yet be checked against the current 30-row corpus, or behaviours the model deliberately does not attempt. Each is something a careful reader should weigh when interpreting an estimate.
+
 - **Per-region median normalization** — comparing rates as a percentile within their local market (z-score approach) would handle regional variation more precisely, but requires sufficient per-region data density to be reliable.
 - **Cross-border rate suppression** — using `client_country` as the economic context assumes the rate reflects the client's market. In practice, clients sometimes leverage lower-cost regions and pay below their own market norms. If a submitter is aware their rate was below what that client would pay locally, marking it `below_market` reduces its influence (0.5× weight). But the model cannot detect this on its own — the quality of cross-border estimates depends on submitters having that awareness.
+- **Historical exchange rates (F14).** Budgets are converted to USD at today's exchange rate, not the rate at the time of submission. Until 2026-05 the `currency` column was missing from the production schema and every row defaulted to USD, so this was a no-op. Now that the column exists, today's-rate FX conversion is in effect: for stable currencies (EUR, GBP, JPY, CHF) the error stays under ~10% over a two-year window, but for volatile currencies (TRY, ARS, RUB) it can reach 25–100% on submissions older than ~1 year. Frankfurter exposes historical rates; implementing per-month rate snapshots is a future improvement once non-USD submissions begin to arrive at meaningful volume.
+- **DURATION_DAYS midpoints unverified (F10).** The community-usage hypothesis behind each midpoint (e.g. that "1–3 months" really averages 45 days of work) cannot be checked because `days_of_work` is null for 100% of submissions in the seed corpus. Once enough submissions arrive with `days_of_work` populated, midpoints should be re-derived as actual medians per bucket.
+- **Representativeness weights are priors, not data-derived (F9).** The 0.5× / 0.85× / 1.0× multipliers in Step 6 are reasonable based on weight-downweighting literature (0.3–0.7 for "treat-as-unreliable", 0.7–0.9 for "treat-as-noisy"), but zero submissions have used the `rate_representativeness` field yet — so the specific values cannot be empirically validated against this corpus. Recheck once data accrues.
+- **Top-50 cutoff sensitivity (F11).** The top-50 slice that feeds the percentile calculation has not been calibrated against a large corpus; with 30 rows it never bites (every qualifying project enters). Within-pool slice sensitivity *is* real — probe 08 shows top-10 vs top-20 changing p75 by up to +76% on the TD/PM US Senior query — but the choice of 50 specifically is a placeholder until corpus growth makes calibration meaningful.
+- **5% annual inflation is borrowed (F12).** Industry-specific creative-tech wage data is sparse. Public sources (US BLS, EU CBS, freelance-platform reports) suggest 3–7% YoY freelance rate growth across 2022–2025; 5% sits in the middle of that band but has not been measured against creative-tech specifically. Worth revisiting when 3+ years of submissions have accrued. Maximum distortion on the current 2024–2025 corpus is ~10%.
+- **Economic context priority (F13).** The choice of `client_country ?? project_location` as the economic signal is reasoned (the client's market caps what they expect to pay), but only 3/30 rows in the current corpus have `client_country` differing from `project_location`. A variance-reduction test (probe 09) was inconclusive — within-group standard deviation was approximately equal to the overall total under both groupings. The choice cannot yet be confirmed empirically; it stands on the reasoning alone.
+- **Currency conversion history (F1/F14).** Until 2026-05 the `currency` column was absent from production, so every submission silently defaulted to USD regardless of what users selected on the form. The schema is now synced and currency is being recorded going forward, but any rate distribution computed from the seed corpus reflects the as-USD assumption. This will resolve naturally as new submissions accumulate in their actual currencies; until then, treat estimates as USD-anchored even when querying in a non-USD market.
