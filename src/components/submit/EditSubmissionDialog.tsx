@@ -27,10 +27,11 @@ import {
   COUNTRIES,
   RATE_TYPES,
   YOUR_ROLES,
-  CURRENCIES,
+  CURRENCY_OPTIONS,
   CONTRACTED_AS,
   RATE_REPRESENTATIVENESS,
 } from "@/lib/projectTypes";
+import SearchableCombobox from "@/components/ui/searchable-combobox";
 
 export interface DBSubmission {
   id: string;
@@ -188,25 +189,23 @@ const EditSubmissionDialog = ({ submission, token, onSaved, onClose }: Props) =>
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Project Location</Label>
-              <Select value={projectLocation} onValueChange={setProjectLocation}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {COUNTRIES.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableCombobox
+                options={COUNTRIES.map((c) => ({ value: c, label: c }))}
+                value={projectLocation}
+                onChange={setProjectLocation}
+                placeholder="Select country"
+                searchPlaceholder="Search country..."
+              />
             </div>
             <div className="space-y-2">
               <Label>Client Origin <span className="text-muted-foreground font-normal">(optional)</span></Label>
-              <Select value={clientCountry} onValueChange={setClientCountry}>
-                <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
-                <SelectContent>
-                  {COUNTRIES.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableCombobox
+                options={COUNTRIES.map((c) => ({ value: c, label: c }))}
+                value={clientCountry}
+                onChange={setClientCountry}
+                placeholder="Select country"
+                searchPlaceholder="Search country..."
+              />
             </div>
           </div>
 
@@ -303,14 +302,13 @@ const EditSubmissionDialog = ({ submission, token, onSaved, onClose }: Props) =>
             </div>
             <div className="space-y-2">
               <Label>Currency</Label>
-              <Select value={currency} onValueChange={setCurrency}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {CURRENCIES.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableCombobox
+                options={CURRENCY_OPTIONS.map((c) => ({ value: c.value, label: c.label }))}
+                value={currency}
+                onChange={setCurrency}
+                placeholder="Select currency"
+                searchPlaceholder="Search currency..."
+              />
             </div>
             <div className="space-y-2">
               <Label>Total Production Budget <span className="text-muted-foreground font-normal">(optional)</span></Label>

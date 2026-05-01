@@ -27,11 +27,12 @@ import {
   COUNTRIES,
   RATE_TYPES,
   YOUR_ROLES,
-  CURRENCIES,
+  CURRENCY_OPTIONS,
   CONTRACTED_AS,
   RATE_REPRESENTATIVENESS,
 } from "@/lib/projectTypes";
 import { X } from "lucide-react";
+import SearchableCombobox from "@/components/ui/searchable-combobox";
 
 interface ProjectSubmission {
   id: string;

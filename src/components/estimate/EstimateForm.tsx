@@ -16,6 +16,7 @@ import {
   COUNTRIES,
   YOUR_ROLES,
 } from "@/lib/projectTypes";
+import SearchableCombobox from "@/components/ui/searchable-combobox";
 
 interface EstimateFormProps {
   projectType: string;
@@ -101,26 +102,18 @@ const EstimateForm = ({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Project Location</Label>
-              <Select
+              <SearchableCombobox
+                options={COUNTRIES.map((c) => ({ value: c, label: c }))}
                 value={projectLocation}
-                onValueChange={(v) => {
+                onChange={(v) => {
                   if (!clientCountry || clientCountry === projectLocation) {
                     setClientCountry(v);
                   }
                   setProjectLocation(v);
                 }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Where?" />
-                </SelectTrigger>
-                <SelectContent>
-                  {COUNTRIES.map((country) => (
-                    <SelectItem key={country} value={country}>
-                      {country}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Where?"
+                searchPlaceholder="Search country..."
+              />
             </div>
 
             <div className="space-y-2">
@@ -128,18 +121,13 @@ const EstimateForm = ({
                 Client Origin{" "}
                 <span className="text-muted-foreground font-normal text-xs">(optional)</span>
               </Label>
-              <Select value={clientCountry} onValueChange={setClientCountry}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Client country" />
-                </SelectTrigger>
-                <SelectContent>
-                  {COUNTRIES.map((country) => (
-                    <SelectItem key={country} value={country}>
-                      {country}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableCombobox
+                options={COUNTRIES.map((c) => ({ value: c, label: c }))}
+                value={clientCountry}
+                onChange={setClientCountry}
+                placeholder="Client country"
+                searchPlaceholder="Search country..."
+              />
               {clientCountry && clientCountry === projectLocation && (
                 <p className="text-xs text-muted-foreground">Same as project location</p>
               )}
