@@ -24,6 +24,8 @@ dist-ssr
 *.sw?
 /.claude
 /.modus
+/context
+bun.lockb
 
 .env
 .env.local
@@ -31,5 +33,4 @@ dist-ssr
 .env.staging
 .env.staging.local
 .vercel
-/supabase/.temp
 /supabase/.temp
