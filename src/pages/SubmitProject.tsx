@@ -24,10 +24,11 @@ import {
   COUNTRIES,
   RATE_TYPES,
   YOUR_ROLES,
-  CURRENCIES,
+  CURRENCY_OPTIONS,
   CONTRACTED_AS,
   RATE_REPRESENTATIVENESS,
 } from "@/lib/projectTypes";
+import SearchableCombobox from "@/components/ui/searchable-combobox";
 import { validateDescription, sanitizeDescriptionWithAI } from "@/lib/sanitizeSubmission";
 import VerificationStep from "@/components/submit/VerificationStep";
 import PrivacyConsentCheckbox from "@/components/gdpr/PrivacyConsentCheckbox";
@@ -318,9 +319,10 @@ const SubmitProject = () => {
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="projectLocation">Project Location *</Label>
-                  <Select
+                  <SearchableCombobox
+                    options={COUNTRIES.map((c) => ({ value: c, label: c }))}
                     value={form.watch("projectLocation")}
-                    onValueChange={(v) => {
+                    onChange={(v) => {
                       const prevProject = form.getValues("projectLocation");
                       const currentClient = form.getValues("clientCountry");
                       form.setValue("projectLocation", v);
@@ -328,18 +330,9 @@ const SubmitProject = () => {
                         form.setValue("clientCountry", v);
                       }
                     }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Where was the project?" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COUNTRIES.map((country) => (
-                        <SelectItem key={country} value={country}>
-                          {country}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="Where was the project?"
+                    searchPlaceholder="Search country..."
+                  />
                   {form.formState.errors.projectLocation && (
                     <p className="text-sm text-destructive">{form.formState.errors.projectLocation.message}</p>
                   )}
@@ -350,21 +343,13 @@ const SubmitProject = () => {
                     Client Origin{" "}
                     <span className="text-muted-foreground font-normal">(optional)</span>
                   </Label>
-                  <Select
+                  <SearchableCombobox
+                    options={COUNTRIES.map((c) => ({ value: c, label: c }))}
                     value={form.watch("clientCountry")}
-                    onValueChange={(v) => form.setValue("clientCountry", v)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Where is the client from?" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COUNTRIES.map((country) => (
-                        <SelectItem key={country} value={country}>
-                          {country}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={(v) => form.setValue("clientCountry", v)}
+                    placeholder="Where is the client from?"
+                    searchPlaceholder="Search country..."
+                  />
                   {form.watch("clientCountry") && form.watch("clientCountry") === form.watch("projectLocation") && (
                     <p className="text-xs text-muted-foreground">Same as project location</p>
                   )}
@@ -487,21 +472,13 @@ const SubmitProject = () => {
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="currency">Currency *</Label>
-                  <Select
-                    defaultValue="USD"
-                    onValueChange={(v) => form.setValue("currency", v)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select currency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CURRENCIES.map((currency) => (
-                        <SelectItem key={currency} value={currency}>
-                          {currency}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableCombobox
+                    options={CURRENCY_OPTIONS.map((c) => ({ value: c.value, label: c.label }))}
+                    value={form.watch("currency") || "USD"}
+                    onChange={(v) => form.setValue("currency", v)}
+                    placeholder="Select currency"
+                    searchPlaceholder="Search currency..."
+                  />
                 </div>
               </div>
 

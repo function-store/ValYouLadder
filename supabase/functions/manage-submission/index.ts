@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sanitizeDescription } from "../_shared/sanitizeDescription.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -78,6 +79,10 @@ serve(async (req) => {
       const sanitized: Record<string, unknown> = {};
       for (const key of allowed) {
         if (key in updates) sanitized[key] = updates[key];
+      }
+
+      if (typeof sanitized.description === "string" && sanitized.description.trim() !== "") {
+        sanitized.description = await sanitizeDescription(sanitized.description);
       }
 
       if (Object.keys(sanitized).length === 0) {

@@ -274,65 +274,35 @@ const AdminEditDialog = ({
 
             <div className="space-y-2">
               <Label>Project Location</Label>
-              <Select
+              <SearchableCombobox
+                options={COUNTRIES.map((c) => ({ value: c, label: c }))}
                 value={formData.project_location}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, project_location: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {COUNTRIES.map((country) => (
-                    <SelectItem key={country} value={country}>
-                      {country}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(value) => setFormData((prev) => ({ ...prev, project_location: value }))}
+                placeholder="Select country"
+                searchPlaceholder="Search country..."
+              />
             </div>
 
             <div className="space-y-2">
               <Label>Client Origin <span className="text-muted-foreground font-normal text-xs">(optional)</span></Label>
-              <Select
+              <SearchableCombobox
+                options={COUNTRIES.map((c) => ({ value: c, label: c }))}
                 value={formData.client_country || ""}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, client_country: value || null }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select country" />
-                </SelectTrigger>
-                <SelectContent>
-                  {COUNTRIES.map((country) => (
-                    <SelectItem key={country} value={country}>
-                      {country}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(value) => setFormData((prev) => ({ ...prev, client_country: value || null }))}
+                placeholder="Select country"
+                searchPlaceholder="Search country..."
+              />
             </div>
 
             <div className="space-y-2">
               <Label>Currency</Label>
-              <Select
+              <SearchableCombobox
+                options={CURRENCY_OPTIONS.map((c) => ({ value: c.value, label: c.label }))}
                 value={formData.currency || "USD"}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, currency: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CURRENCIES.map((currency) => (
-                    <SelectItem key={currency} value={currency}>
-                      {currency}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(value) => setFormData((prev) => ({ ...prev, currency: value }))}
+                placeholder="Select currency"
+                searchPlaceholder="Search currency..."
+              />
             </div>
 
             <div className="space-y-2">

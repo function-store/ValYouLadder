@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sanitizeDescription } from "../_shared/sanitizeDescription.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -114,6 +115,11 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
+      if (typeof sanitized.description === "string" && sanitized.description.trim() !== "") {
+        sanitized.description = await sanitizeDescription(sanitized.description);
+      }
+
       const { error } = await serviceClient.from(table).update(sanitized).eq("id", id);
       if (error) throw error;
 
