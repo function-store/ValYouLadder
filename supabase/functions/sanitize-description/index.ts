@@ -31,11 +31,9 @@ serve(async (req) => {
       );
     }
 
-    const systemPrompt = `You are a privacy protection agent for an anonymous pricing database in the visual arts/VJ/TouchDesigner industry.
+    const systemPrompt = `You are a content processing agent for an anonymous pricing database in the visual arts/VJ/TouchDesigner industry. You perform three tasks in one pass:
 
-Your task: Analyze the description and identify ANY identifying information that should be redacted.
-
-MUST REDACT (replace with [redacted]):
+1. REDACT identifying information (replace with [redacted]):
 - Brand names (Nike, Coca-Cola, Apple, Samsung, Mercedes, etc.)
 - Artist/musician names (Beyoncé, Drake, Taylor Swift, Coldplay, etc.)
 - Tour names ("Eras Tour", "Renaissance World Tour", etc.)
@@ -48,21 +46,22 @@ MUST REDACT (replace with [redacted]):
 - URLs, emails, social media handles
 - Specific dates that could identify an event
 
-DO NOT REDACT (these are legitimate industry terms):
+DO NOT REDACT:
 - Generic terms like "brand activation", "festival stage", "arena show", "world tour"
 - Generic client types like "global brand", "tech company", "fashion brand"
 - Generic venue types like "arena", "stadium", "club", "gallery"
 - Technical terms like "LED wall", "projection mapping", "generative visuals"
 - Countries (these are allowed for reference)
 
+2. REMOVE vulgar, offensive, or inappropriate language. Replace with a neutral equivalent where possible, or remove entirely if no neutral equivalent exists.
+
+3. TRANSLATE to English if the text is in another language. Preserve meaning and tone — do not summarize.
+
+Apply all three steps in order and return the final result.
+
 Return a JSON object with:
-1. "sanitized": The description with identifying info replaced by [redacted]
-2. "redactions": Array of what was redacted (for transparency)
-
-Example input: "Created visuals for Nike's brand activation at Coachella 2024, worked with the Martin Garrix team"
-Example output: {"sanitized": "Created visuals for [redacted]'s brand activation at [redacted], worked with the [redacted] team", "redactions": ["Nike", "Coachella 2024", "Martin Garrix"]}
-
-Be thorough but don't over-redact. Industry terminology should remain.`;
+1. "sanitized": The fully processed English description
+2. "redactions": Array of what was redacted or changed (include "translated from [language]" if applicable)`;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,

@@ -195,7 +195,7 @@ const SubmitProject = () => {
             </div>
             <h1 className="text-3xl font-bold mb-4">Thank you!</h1>
             <p className="text-muted-foreground mb-8">
-              Your anonymous project submission has been received. It will help fellow creatives understand market rates.
+              Your submission is in. Got another project worth adding? Every entry makes the estimates more accurate — especially ones from different project types or locations.
             </p>
             <div className="flex gap-4 justify-center flex-wrap">
               <Button variant="outline" onClick={() => setIsSubmitted(false)}>
@@ -222,9 +222,16 @@ const SubmitProject = () => {
             <h1 className="text-3xl md:text-4xl font-bold mb-4">
               Submit a <span className="text-primary">Project</span>
             </h1>
-            <p className="text-muted-foreground">
-              Share your project details anonymously to help build a transparent rate database.
+            <p className="text-muted-foreground max-w-lg mx-auto">
+              Each submission is one real project you remember clearly — the rate, the scope, who it was for. Specific beats vague every time.
             </p>
+          </div>
+
+          <div className="rounded-xl border border-border bg-secondary/30 px-5 py-4 mb-8 space-y-1.5 text-sm text-muted-foreground">
+            <p className="font-medium text-foreground text-xs uppercase tracking-wide font-mono mb-2">What makes a useful submission</p>
+            <p>→ A project where you remember the scope and rate well enough to be accurate</p>
+            <p>→ Below or above your usual rate? Still valuable — just flag it in the form</p>
+            <p>→ Adding working days and a short description makes your entry significantly more useful</p>
           </div>
 
           {!SUBMISSIONS_OPEN && (
@@ -561,17 +568,19 @@ const SubmitProject = () => {
 
             {/* Additional Notes */}
             <div className="node-card rounded-xl p-6 border border-border space-y-4">
-              <h2 className="font-mono font-semibold text-lg border-b border-border pb-3">Additional Notes</h2>
+              <div className="border-b border-border pb-3">
+                <h2 className="font-mono font-semibold text-lg">Additional Notes</h2>
+                <p className="text-xs text-muted-foreground mt-1">Write freely — AI will automatically strip any client names, brand names, venues, or other identifying details before saving.</p>
+              </div>
               <Textarea
-                placeholder="Any additional context about the project (optional)"
+                placeholder="Scope, deliverables, unusual circumstances, what made this project unique..."
                 onChange={(e) => handleDescriptionChange(e.target.value.slice(0, 500))}
                 className="min-h-[100px]"
                 maxLength={500}
               />
               <div className="flex items-start justify-between gap-4">
                 <p className="text-xs text-muted-foreground">
-                  Please don't include any identifying information about the client or yourself.
-                  Any detected names, URLs, or identifiers will be automatically redacted.
+                  The more context you add, the more useful your entry is to the community.
                 </p>
                 <p className={`text-xs shrink-0 ${(form.watch("description")?.length ?? 0) >= 450 ? "text-yellow-500" : "text-muted-foreground"}`}>
                   {form.watch("description")?.length ?? 0} / 500
