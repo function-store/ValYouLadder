@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
 // Fallback static rates (1 USD = X) used when API is unavailable
-const FALLBACK_RATES: Record<string, number> = {
+export const FALLBACK_RATES: Record<string, number> = {
   USD: 1,
   EUR: 0.92,
   GBP: 0.79,
@@ -27,7 +27,7 @@ interface RatesCache {
   timestamp: number;
 }
 
-async function fetchRates(): Promise<Record<string, number>> {
+export async function fetchRates(): Promise<Record<string, number>> {
   const cached = localStorage.getItem(LS_RATES_KEY);
   if (cached) {
     const parsed: RatesCache = JSON.parse(cached);

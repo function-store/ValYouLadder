@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import PrivacyConsentCheckbox from "@/components/gdpr/PrivacyConsentCheckbox";
 import { triggerMailingListPopup } from "@/components/MailingListPopup";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import { useCurrency, fetchRates, FALLBACK_RATES } from "@/contexts/CurrencyContext";
 import PreProdBanner from "@/components/PreProdBanner";
 import {
   DURATION_DAYS,
@@ -112,8 +112,12 @@ const Estimate = () => {
     if (project.project_length === projectLength) score += 10;
     if (project.your_role && yourRole && project.your_role === yourRole) score += 10;
 
-    if (project.project_location === projectLocation) score += 10;
-    if (project.client_country && clientCountry && project.client_country === clientCountry) score += 5;
+    // Economic context: client_country is the primary rate signal (who's paying sets the budget ceiling),
+    // falling back to project_location for local market work.
+    const submissionEconomicContext = project.client_country ?? project.project_location;
+    const queryEconomicContext = clientCountry || projectLocation;
+    if (submissionEconomicContext === queryEconomicContext) score += 12;
+    else if (project.project_location === projectLocation) score += 5;
 
     // IDF-weighted skill overlap — rare skills carry more signal
     if (selectedSkills.length > 0) {
@@ -156,20 +160,24 @@ const Estimate = () => {
   const fetchSimilarProjects = async (): Promise<{
     projects: SimilarProject[];
     weights: number[];
+    rates: Record<string, number>;
   }> => {
-    const { data, error } = await supabase
-      .from("project_submissions")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(500);
+    const [{ data, error }, rates] = await Promise.all([
+      supabase
+        .from("project_submissions")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(500),
+      fetchRates().catch(() => FALLBACK_RATES),
+    ]);
 
     if (error) {
       console.error("Error fetching projects:", error);
-      return { projects: [], weights: [] };
+      return { projects: [], weights: [], rates };
     }
 
     if (!data || data.length === 0) {
-      return { projects: [], weights: [] };
+      return { projects: [], weights: [], rates };
     }
 
     const skillIdf = computeSkillIdf(data as DatabaseProject[]);
@@ -212,7 +220,7 @@ const Estimate = () => {
       score * representativenessWeight(project)
     );
 
-    return { projects, weights };
+    return { projects, weights, rates };
   };
 
   /**
@@ -248,7 +256,8 @@ const Estimate = () => {
    */
   const calculateFromRealData = (
     projects: SimilarProject[],
-    weights: number[]
+    weights: number[],
+    rates: Record<string, number>
   ): {
     low: number;
     mid: number;
@@ -264,7 +273,10 @@ const Estimate = () => {
 
     const weightedItems = projects.map((p, i) => {
       const durationDays = DURATION_DAYS[p.projectLength] || 15;
-      const dailyRate = p.budget / durationDays;
+      // Convert budget to USD before comparing — without this, 1000 HUF === 1000 USD
+      const fromRate = rates[p.currency ?? "USD"] ?? 1;
+      const budgetUSD = p.budget / fromRate;
+      const dailyRate = budgetUSD / durationDays;
       const yearsOld = currentYear - p.yearCompleted;
       const adjustedRate = dailyRate * Math.pow(1 + ANNUAL_INFLATION, yearsOld);
       return { value: adjustedRate, weight: weights[i] };
@@ -320,7 +332,7 @@ const Estimate = () => {
     setAiInsights(null);
 
     try {
-      const { projects: similarProjects, weights } =
+      const { projects: similarProjects, weights, rates } =
         await fetchSimilarProjects();
       const sampleSize = similarProjects.length;
 
@@ -332,7 +344,7 @@ const Estimate = () => {
         }
 
         try {
-          const statResult = calculateFromRealData(similarProjects, weights);
+          const statResult = calculateFromRealData(similarProjects, weights, rates);
 
           const { data, error } = await supabase.functions.invoke(
             "estimate-rate",
@@ -398,7 +410,7 @@ const Estimate = () => {
             return;
           }
 
-          const result = calculateFromRealData(similarProjects, weights);
+          const result = calculateFromRealData(similarProjects, weights, rates);
           if (!result) {
             toast.error(
               "Not enough community data to generate an estimate. Try broadening your criteria."
@@ -419,7 +431,7 @@ const Estimate = () => {
           await saveEstimateToDatabase(result, sampleSize, false);
         }
       } else {
-        const result = calculateFromRealData(similarProjects, weights);
+        const result = calculateFromRealData(similarProjects, weights, rates);
 
         if (!result) {
           toast.info(

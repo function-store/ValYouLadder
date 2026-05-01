@@ -205,6 +205,9 @@ public/
 
 ## Key features
 
+See [ALGORITHM.md](./ALGORITHM.md) for a full breakdown of the similarity scoring, rate normalization, representativeness weighting, ESS confidence, and AI grounding logic.
+
+
 - **Estimation engine:** IDF-weighted skill similarity, recency-adjusted daily rates, weighted percentile calculations (p25/p50/p75)
 - **AI enhancement:** Optional Gemini 2.5 Flash estimation. The statistical estimate (p25/p50/p75) is pre-computed from community data and passed to Gemini as a grounding anchor, keeping AI output consistent with the data-driven range while allowing qualitative adjustments for scope, expertise, or market context
 - **Implied day rate:** When `days_of_work` is provided, displayed as a subtext on database cards, detail dialogs, and similar project results — computed as `your_budget / days_of_work`
