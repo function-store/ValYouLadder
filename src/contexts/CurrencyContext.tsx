@@ -8,6 +8,7 @@ export const FALLBACK_RATES: Record<string, number> = {
   AUD: 1.58,
   CAD: 1.38,
   CHF: 0.90,
+  HUF: 380,
   NOK: 10.8,
   SEK: 10.5,
   DKK: 6.9,
