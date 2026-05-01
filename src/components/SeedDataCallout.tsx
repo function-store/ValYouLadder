@@ -3,9 +3,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Threshold above which we consider the corpus to be mostly real data and
- * stop showing the "based on starter data" callout. Tuned conservatively —
- * once enough real submissions land, this disappears automatically.
+ * Threshold above which the corpus is dense enough that the "early-days"
+ * callout becomes noise. Tuned conservatively — disappears automatically
+ * as submissions accumulate.
  */
 const SEED_DATA_CUTOFF = 50;
 
@@ -16,9 +16,9 @@ interface SeedDataCalloutProps {
 }
 
 /**
- * Visible-but-not-alarming callout shown while the database is mostly the
- * 30-row seed corpus. Visibility is gated on the live row count — it
- * disappears automatically once real submissions accumulate.
+ * Visible-but-not-alarming callout shown while the database is still small.
+ * Visibility is gated on the live row count — it disappears automatically
+ * once enough submissions accumulate.
  */
 const SeedDataCallout = ({ message, className }: SeedDataCalloutProps) => {
   const [show, setShow] = useState<boolean | null>(null);
@@ -55,7 +55,7 @@ const SeedDataCallout = ({ message, className }: SeedDataCalloutProps) => {
       <Sprout className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
       <p className="text-muted-foreground leading-snug">
         {message ??
-          "Estimate based on starter data. It will tighten as real submissions accumulate — your contribution helps the next person."}
+          "Early days — the database is still small. Estimates will tighten as more submissions land. Your contribution helps the next person."}
       </p>
     </div>
   );

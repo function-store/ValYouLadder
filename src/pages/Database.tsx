@@ -149,20 +149,20 @@ const Database = () => {
 
           <SeedDataCallout
             className="mb-6"
-            message="Most entries below are starter examples to seed the database. Real submissions are starting to mix in — the picture sharpens as more arrive."
+            message="Early days — the database is still small. The picture sharpens as more submissions arrive."
           />
 
 
-          {/* Under construction banner */}
-          {!loading && projects.length < 30 && (
+          {/* Early-days banner — encourages submissions while the corpus is small */}
+          {!loading && projects.length < 50 && (
             <div className="mb-8 rounded-xl border border-primary/30 bg-primary/5 p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <div className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
                 <Construction className="h-5 w-5 text-primary" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-sm mb-1">Database under construction</h3>
+                <h3 className="font-semibold text-sm mb-1">Help the database grow</h3>
                 <p className="text-sm text-muted-foreground">
-                  We currently have {projects.length} project{projects.length !== 1 ? "s" : ""}. The more data we collect, the better our estimates become. Help the community by sharing your project anonymously.
+                  The more data the community contributes, the better the estimates become. Share your project anonymously — it takes a couple of minutes.
                 </p>
               </div>
               <Button asChild variant="default" size="sm" className="flex-shrink-0">

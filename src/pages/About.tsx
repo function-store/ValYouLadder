@@ -45,10 +45,9 @@ const About = () => {
                 professionals can thrive without racing to the bottom.
               </p>
               <p className="text-sm border-l-2 border-primary/40 pl-4 italic">
-                <span className="text-foreground font-medium">Where we are today:</span> the database
-                starts with around 30 example submissions while the platform finds its first
-                contributors. Estimates will tighten as real projects accumulate — every submission
-                pulls the picture closer to reality.
+                <span className="text-foreground font-medium">Where we are today:</span> we're early.
+                The database is still small, and estimates will tighten as real projects accumulate —
+                every submission pulls the picture closer to reality.
               </p>
             </div>
           </section>

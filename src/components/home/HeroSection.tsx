@@ -51,10 +51,10 @@ const HeroSection = () => {
           </div>
         </div>
 
-        {/* Honest "where we are today" line — no fabricated stats */}
+        {/* Early-days framing — no fabricated stats, no count claims */}
         <div className="mt-16 max-w-2xl mx-auto text-center animate-slide-up" style={{ animationDelay: "0.4s" }}>
           <p className="text-sm text-muted-foreground font-mono">
-            30 starter examples to bootstrap the database — be one of the first real submissions.
+            Estimates sharpen with every submission. Your project shapes what others see.
           </p>
           <Link to="/submit" className="inline-block mt-3 text-sm text-primary hover:text-primary/80 underline-offset-4 hover:underline">
             Add your project →
