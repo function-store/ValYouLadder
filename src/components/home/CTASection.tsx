@@ -19,7 +19,7 @@ const CTASection = () => {
             Get a rate estimate for your next project
           </h2>
           <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
-            Input your project details and let our AI analyze the database to suggest a competitive rate based on real community data.
+            Input your project details and let our AI analyse the database to suggest a competitive rate. Estimates are based on starter examples today and will sharpen as the community contributes.
           </p>
           
           <Link to="/estimate">

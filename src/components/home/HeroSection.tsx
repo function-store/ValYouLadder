@@ -24,7 +24,7 @@ const HeroSection = () => {
 
           {/* Subheadline */}
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-slide-up" style={{ animationDelay: "0.2s" }}>
-            A community database of real project rates for VJs, TouchDesigner artists, and interactive installation creators.
+            A community database of project rates for VJs, TouchDesigner artists, and interactive installation creators.
             Submit anonymously, reference transparently.
           </p>
 
@@ -51,19 +51,14 @@ const HeroSection = () => {
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-20 max-w-3xl mx-auto animate-slide-up" style={{ animationDelay: "0.4s" }}>
-          {[
-            { label: "Projects", value: "500+" },
-            { label: "Contributors", value: "120+" },
-            { label: "Countries", value: "35+" },
-            { label: "Avg Rate", value: "$4.2k" },
-          ].map((stat) => (
-            <div key={stat.label} className="node-card rounded-lg p-4 text-center border border-border">
-              <div className="text-2xl md:text-3xl font-mono font-bold text-primary mb-1">{stat.value}</div>
-              <div className="text-sm text-muted-foreground">{stat.label}</div>
-            </div>
-          ))}
+        {/* Honest "where we are today" line — no fabricated stats */}
+        <div className="mt-16 max-w-2xl mx-auto text-center animate-slide-up" style={{ animationDelay: "0.4s" }}>
+          <p className="text-sm text-muted-foreground font-mono">
+            30 starter examples to bootstrap the database — be one of the first real submissions.
+          </p>
+          <Link to="/submit" className="inline-block mt-3 text-sm text-primary hover:text-primary/80 underline-offset-4 hover:underline">
+            Add your project →
+          </Link>
         </div>
       </div>
     </section>

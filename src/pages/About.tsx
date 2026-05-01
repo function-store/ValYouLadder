@@ -35,14 +35,20 @@ const About = () => {
                 unsustainable careers.
               </p>
               <p>
-                Our platform exists to change that. By crowdsourcing anonymous rate data from real 
-                projects, we create a transparent picture of what the market actually pays—not what 
-                clients claim they can afford, or what outdated salary surveys suggest.
+                Our platform exists to change that. By crowdsourcing anonymous rate data from real
+                projects, we want to build a transparent picture of what the market actually pays—not
+                what clients claim they can afford, or what outdated salary surveys suggest.
               </p>
               <p>
-                <span className="text-foreground font-medium">Fair pay isn't just about money.</span> It's 
-                about valuing expertise, respecting time, and building an industry where talented 
+                <span className="text-foreground font-medium">Fair pay isn't just about money.</span> It's
+                about valuing expertise, respecting time, and building an industry where talented
                 professionals can thrive without racing to the bottom.
+              </p>
+              <p className="text-sm border-l-2 border-primary/40 pl-4 italic">
+                <span className="text-foreground font-medium">Where we are today:</span> the database
+                starts with around 30 example submissions while the platform finds its first
+                contributors. Estimates will tighten as real projects accumulate — every submission
+                pulls the picture closer to reality.
               </p>
             </div>
           </section>
@@ -55,7 +61,8 @@ const About = () => {
               </div>
               <h3 className="font-semibold mb-2">Community-Driven</h3>
               <p className="text-sm text-muted-foreground">
-                Our data comes from real professionals sharing real project rates anonymously.
+                Built to be filled by real professionals sharing project rates anonymously, one
+                submission at a time.
               </p>
             </div>
 

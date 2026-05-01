@@ -18,6 +18,7 @@ import { sanitizeDescription } from "@/lib/sanitizeSubmission";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import PreProdBanner from "@/components/PreProdBanner";
+import SeedDataCallout from "@/components/SeedDataCallout";
 
 const Database = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -145,6 +146,12 @@ const Database = () => {
           </div>
 
           <PreProdBanner message="All entries shown here are mock data. None of it represents real project submissions." />
+
+          <SeedDataCallout
+            className="mb-6"
+            message="Most entries below are starter examples to seed the database. Real submissions are starting to mix in — the picture sharpens as more arrive."
+          />
+
 
           {/* Under construction banner */}
           {!loading && projects.length < 30 && (

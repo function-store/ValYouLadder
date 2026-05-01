@@ -1,6 +1,8 @@
-import { TrendingUp, Users, Calendar, Sparkles, Brain, Lightbulb, ShieldCheck } from "lucide-react";
+import { TrendingUp, Users, Calendar, Sparkles, Brain, Lightbulb, ShieldCheck, HelpCircle } from "lucide-react";
 import SimilarProjectsList, { SimilarProject } from "./SimilarProjectsList";
 import { Badge } from "@/components/ui/badge";
+import SeedDataCallout from "@/components/SeedDataCallout";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface EstimateResultsProps {
   estimate: {
@@ -37,6 +39,8 @@ const EstimateResults = ({ estimate, formatCurrency, aiInsights }: EstimateResul
 
   return (
     <div className="space-y-6">
+      <SeedDataCallout />
+
       <div className="node-card rounded-xl p-6 border border-primary/30 space-y-6">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-primary">
@@ -153,6 +157,24 @@ const EstimateResults = ({ estimate, formatCurrency, aiInsights }: EstimateResul
             >
               {estimate.dataConfidence}
             </Badge>
+            <TooltipProvider delayDuration={150}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="What does data confidence mean?"
+                    className="text-muted-foreground/70 hover:text-foreground transition-colors"
+                  >
+                    <HelpCircle className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs text-xs leading-relaxed">
+                  Based on how many similar projects we have <em>and</em> how
+                  close the best match is. Low = sparse data; submit more and
+                  this sharpens.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         )}
 
