@@ -30,7 +30,7 @@ npm install
 npm run dev
 ```
 
-Dev server starts at `http://localhost:5173`.
+Dev server starts at `http://localhost:5173`
 
 ## Scripts
 
