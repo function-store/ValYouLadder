@@ -55,7 +55,9 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-const SUBMISSIONS_OPEN = false;
+import { IS_PRE_PROD } from "@/lib/config";
+
+const SUBMISSIONS_OPEN = !IS_PRE_PROD;
 
 const SubmitProject = () => {
   const { toast } = useToast();

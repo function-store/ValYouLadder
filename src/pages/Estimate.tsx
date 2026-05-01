@@ -14,6 +14,7 @@ import PrivacyConsentCheckbox from "@/components/gdpr/PrivacyConsentCheckbox";
 import { triggerMailingListPopup } from "@/components/MailingListPopup";
 import { useCurrency, fetchRates, FALLBACK_RATES } from "@/contexts/CurrencyContext";
 import PreProdBanner from "@/components/PreProdBanner";
+import { IS_PRE_PROD } from "@/lib/config";
 import {
   DURATION_DAYS,
   MIN_SIMILARITY_THRESHOLD,
@@ -47,7 +48,7 @@ interface DatabaseProject {
 }
 
 const AI_COOLDOWN_KEY = "vyl_ai_estimate_ts";
-const AI_COOLDOWN_SECONDS = 60;
+const AI_COOLDOWN_SECONDS = IS_PRE_PROD ? 0 : 60;
 
 const Estimate = () => {
   const { format: formatCurrencyFn } = useCurrency();

@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Target, Users, TrendingUp, Shield, Heart, Mail, ArrowRight } from "lucide-react";
 import NewsletterSignup from "@/components/NewsletterSignup";
 
-const SUBMISSIONS_OPEN = false;
+import { IS_PRE_PROD } from "@/lib/config";
+
+const SUBMISSIONS_OPEN = !IS_PRE_PROD;
 
 const About = () => {
   return (

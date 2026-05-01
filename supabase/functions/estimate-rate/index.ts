@@ -7,6 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+const IS_PRODUCTION = Deno.env.get("SITE_URL") === "https://valyouladder.com";
 const RATE_LIMIT = 5;
 const WINDOW_HOURS = 1;
 
@@ -54,7 +55,7 @@ serve(async (req) => {
       .eq("ip_hash", ipHash)
       .gte("created_at", windowStart);
 
-    if ((count ?? 0) >= RATE_LIMIT) {
+    if (IS_PRODUCTION && (count ?? 0) >= RATE_LIMIT) {
       return new Response(
         JSON.stringify({
           error: "You've used your 5 AI estimates for this hour. Please try again later.",
