@@ -50,6 +50,9 @@ const Footer = () => {
             </Link>
           </div>
         </div>
+        <p className="text-xs text-muted-foreground/40 text-center mt-4 font-mono">
+          build {new Date(__BUILD_TIME__).toISOString().slice(0, 16).replace("T", " ")} UTC
+        </p>
       </div>
     </footer>
 
