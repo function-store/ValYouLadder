@@ -29,7 +29,7 @@ import {
   RATE_REPRESENTATIVENESS,
 } from "@/lib/projectTypes";
 import SearchableCombobox from "@/components/ui/searchable-combobox";
-import { validateDescription, sanitizeDescriptionWithAI } from "@/lib/sanitizeSubmission";
+import { validateDescription, sanitizeDescriptionWithAI, SanitizationUnavailableError } from "@/lib/sanitizeSubmission";
 import VerificationStep from "@/components/submit/VerificationStep";
 import PrivacyConsentCheckbox from "@/components/gdpr/PrivacyConsentCheckbox";
 
@@ -126,7 +126,28 @@ const SubmitProject = () => {
     setIsSubmitting(true);
 
     try {
-      const { sanitized, redactions } = await sanitizeDescriptionWithAI(data.description);
+      let sanitized = "";
+      let redactions: string[] = [];
+      if (data.description && data.description.trim() !== "") {
+        try {
+          const result = await sanitizeDescriptionWithAI(data.description);
+          sanitized = result.sanitized;
+          redactions = result.redactions;
+        } catch (sanErr) {
+          if (sanErr instanceof SanitizationUnavailableError) {
+            toast({
+              title: "Couldn't process your description",
+              description:
+                sanErr.message ||
+                "Our description cleanup is unavailable. Please try again in a minute, or remove the description and resubmit.",
+              variant: "destructive",
+            });
+            setIsSubmitting(false);
+            return;
+          }
+          throw sanErr;
+        }
+      }
 
       const sanitizedData = {
         ...data,

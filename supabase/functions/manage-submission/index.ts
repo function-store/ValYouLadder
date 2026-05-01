@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { sanitizeDescription } from "../_shared/sanitizeDescription.ts";
+import { sanitizeDescription, SanitizationFailedError } from "../_shared/sanitizeDescription.ts";
+import { timingSafeEqualStrings } from "../_shared/timingSafeEqual.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -42,15 +43,22 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Validate the token
+    // Validate the token. Look up by submission_id only, then compare in
+    // constant time so we don't leak via either DB short-circuiting or the
+    // strict-equality path here.
     const { data: tokenRow, error: tokenError } = await supabase
       .from("submission_tokens")
-      .select("submission_id")
+      .select("token")
       .eq("submission_id", submissionId)
-      .eq("token", token)
-      .single();
+      .maybeSingle();
 
-    if (tokenError || !tokenRow) {
+    const expectedToken = (tokenRow?.token as string | undefined) ?? "";
+    const tokenOk =
+      !tokenError &&
+      expectedToken !== "" &&
+      timingSafeEqualStrings(expectedToken, String(token));
+
+    if (!tokenOk) {
       return new Response(
         JSON.stringify({ error: "Invalid token" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -82,7 +90,21 @@ serve(async (req) => {
       }
 
       if (typeof sanitized.description === "string" && sanitized.description.trim() !== "") {
-        sanitized.description = await sanitizeDescription(sanitized.description);
+        try {
+          sanitized.description = await sanitizeDescription(sanitized.description);
+        } catch (err) {
+          if (err instanceof SanitizationFailedError) {
+            return new Response(
+              JSON.stringify({
+                error:
+                  "We couldn't process your description right now. Please try again in a minute, or remove identifying details and resubmit.",
+                code: "SANITIZATION_FAILED",
+              }),
+              { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+          throw err;
+        }
       }
 
       if (Object.keys(sanitized).length === 0) {

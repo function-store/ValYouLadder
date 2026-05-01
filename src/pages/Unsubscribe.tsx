@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,31 +8,55 @@ import { supabase } from "@/integrations/supabase/client";
 import { Mail, CheckCircle2, Trash2 } from "lucide-react";
 
 const Unsubscribe = () => {
-  const [email, setEmail] = useState("");
+  const [searchParams] = useSearchParams();
+  const [email, setEmail] = useState(searchParams.get("email") ?? "");
+  const [token, setToken] = useState(searchParams.get("token") ?? "");
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = email.trim().toLowerCase();
-    if (!trimmed) return;
+  // Auto-submit if both email + token arrived via the email link
+  useEffect(() => {
+    if (searchParams.get("email") && searchParams.get("token")) {
+      void submitUnsubscribe(searchParams.get("email")!.trim().toLowerCase(), searchParams.get("token")!);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
+  const submitUnsubscribe = async (emailValue: string, tokenValue: string) => {
     setStatus("loading");
     setErrorMessage("");
 
     try {
-      const { error } = await supabase.functions.invoke("unsubscribe", {
-        body: { email: trimmed },
+      const { data, error } = await supabase.functions.invoke("unsubscribe", {
+        body: { email: emailValue, token: tokenValue },
       });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       setStatus("done");
     } catch (err) {
       console.error("Unsubscribe error:", err);
       setStatus("error");
-      setErrorMessage("Something went wrong. Please try again or contact us directly.");
+      setErrorMessage(
+        err instanceof Error && err.message
+          ? err.message
+          : "Something went wrong. Please use the link from your email, or contact us directly."
+      );
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed || !token.trim()) {
+      setStatus("error");
+      setErrorMessage(
+        "Please use the unsubscribe link sent to your email — it contains a token that confirms it's really you."
+      );
+      return;
+    }
+    await submitUnsubscribe(trimmed, token.trim());
   };
 
   if (status === "done") {
@@ -63,8 +88,8 @@ const Unsubscribe = () => {
             </div>
             <h1 className="text-2xl font-bold mb-2">Unsubscribe</h1>
             <p className="text-muted-foreground text-sm">
-              Enter your email address to remove it from our mailing list.
-              This also fulfils your GDPR right to erasure for this data.
+              The easiest way is to click the unsubscribe link in any email we sent you — it carries
+              a token that confirms the request is yours. You can also paste the email + token below.
             </p>
           </div>
 
@@ -80,6 +105,22 @@ const Unsubscribe = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="token">Unsubscribe token</Label>
+                <Input
+                  id="token"
+                  type="text"
+                  required
+                  placeholder="from the link in your email"
+                  value={token}
+                  onChange={(e) => setToken(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Look for the unsubscribe link at the bottom of any newsletter we sent — the token
+                  is the value after <code>token=</code>.
+                </p>
               </div>
 
               {status === "error" && (
@@ -99,11 +140,11 @@ const Unsubscribe = () => {
           </div>
 
           <p className="text-center text-xs text-muted-foreground mt-4">
-            If you have other data requests, contact us via the{" "}
+            Lost the email? Contact us via the{" "}
             <a href="/privacy" className="underline hover:text-foreground transition-colors">
               Privacy Policy
-            </a>
-            .
+            </a>{" "}
+            page and we'll handle it manually.
           </p>
         </div>
       </div>

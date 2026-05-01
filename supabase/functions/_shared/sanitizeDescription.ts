@@ -1,12 +1,31 @@
 /**
- * Sanitizes a project description using Gemini to redact PII.
- * Returns the sanitized string, or the original if AI is unavailable.
+ * Sanitization helper used by edge functions before persisting any
+ * user-provided description text.
+ *
+ * Fails CLOSED: every error path throws `SanitizationFailedError`, never
+ * returns the original (potentially identifying) text. Callers MUST decide
+ * whether to reject the request or fall back to storing `null` — silent
+ * fall-through to the unsanitized string is not allowed.
  */
+
+export class SanitizationFailedError extends Error {
+  public readonly reason: string;
+
+  constructor(reason: string) {
+    super(`Description sanitization failed: ${reason}`);
+    this.name = "SanitizationFailedError";
+    this.reason = reason;
+  }
+}
+
 export async function sanitizeDescription(description: string): Promise<string> {
   if (!description || description.trim() === "") return description;
 
   const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-  if (!GEMINI_API_KEY) return description;
+  if (!GEMINI_API_KEY) {
+    console.error("sanitizeDescription: GEMINI_API_KEY not configured");
+    throw new SanitizationFailedError("ai_unavailable");
+  }
 
   const systemPrompt = `You are a content processing agent for an anonymous pricing database in the visual arts/VJ/TouchDesigner industry. You perform three tasks in one pass:
 
@@ -40,8 +59,9 @@ Return a JSON object with:
 1. "sanitized": The fully processed English description
 2. "redactions": Array of what was redacted or changed (include "translated from [language]" if applicable)`;
 
+  let response: Response;
   try {
-    const response = await fetch(
+    response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
@@ -53,16 +73,43 @@ Return a JSON object with:
         }),
       }
     );
-
-    if (!response.ok) return description;
-
-    const data = await response.json();
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!content) return description;
-
-    const result = JSON.parse(content.trim());
-    return result.sanitized || description;
-  } catch {
-    return description;
+  } catch (err) {
+    console.error("sanitizeDescription: network error", err instanceof Error ? err.message : err);
+    throw new SanitizationFailedError("network_error");
   }
+
+  if (!response.ok) {
+    console.error("sanitizeDescription: upstream non-OK", response.status);
+    throw new SanitizationFailedError(`upstream_${response.status}`);
+  }
+
+  let data: unknown;
+  try {
+    data = await response.json();
+  } catch (err) {
+    console.error("sanitizeDescription: invalid JSON envelope", err instanceof Error ? err.message : err);
+    throw new SanitizationFailedError("invalid_envelope");
+  }
+
+  const content =
+    (data as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> })
+      ?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!content) {
+    throw new SanitizationFailedError("empty_response");
+  }
+
+  let result: { sanitized?: unknown };
+  try {
+    result = JSON.parse(content.trim());
+  } catch (err) {
+    console.error("sanitizeDescription: failed to parse model output", err instanceof Error ? err.message : err);
+    throw new SanitizationFailedError("parse_failed");
+  }
+
+  if (typeof result.sanitized !== "string" || result.sanitized.trim() === "") {
+    throw new SanitizationFailedError("missing_sanitized_field");
+  }
+
+  return result.sanitized;
 }

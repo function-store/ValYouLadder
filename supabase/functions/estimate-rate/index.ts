@@ -4,22 +4,81 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-vyl-session",
 };
 
 const IS_PRODUCTION = Deno.env.get("SITE_URL") === "https://valyouladder.com";
 const RATE_LIMIT = 5;
 const WINDOW_HOURS = 1;
 
-async function hashIp(ip: string): Promise<string> {
-  const data = new TextEncoder().encode(ip);
+async function sha256Hex(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input);
   const buf = await crypto.subtle.digest("SHA-256", data);
   return Array.from(new Uint8Array(buf))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 }
 
-serve(async (req) => {
+/**
+ * Resolve the request's caller "fingerprint" in a way that can't be
+ * trivially spoofed by setting a single header.
+ *
+ * Strategy:
+ *  1. Prefer the runtime peer address surfaced by Deno.serve's `info`
+ *     (passed through to the handler). This is the actual TCP peer and
+ *     is set by the runtime, not the client.
+ *  2. Fall back to a hash of (peer-or-forwarded-ip + user-agent). Spoofing
+ *     a single x-forwarded-for header is no longer enough — an attacker
+ *     would also have to vary the user-agent every request.
+ */
+async function fingerprintFromRequest(
+  req: Request,
+  info: { remoteAddr?: { hostname?: string } } | undefined
+): Promise<string> {
+  const runtimePeer = info?.remoteAddr?.hostname;
+  const forwarded =
+    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+    req.headers.get("cf-connecting-ip") ||
+    req.headers.get("x-real-ip") ||
+    "unknown";
+  const ua = req.headers.get("user-agent") ?? "unknown";
+
+  // The runtime peer is authoritative when present. We still fold the
+  // forwarded value + UA in so a shared NAT egress IP doesn't all collapse
+  // to a single bucket.
+  const composite = `${runtimePeer ?? "no-peer"}|${forwarded}|${ua}`;
+  return await sha256Hex(composite);
+}
+
+function isUuidLike(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+}
+
+interface AiEstimateResponse {
+  low: number;
+  mid: number;
+  high: number;
+  reasoning: string;
+  confidenceLevel: "low" | "medium" | "high";
+  keyFactors: string[];
+}
+
+function isAiEstimateResponse(value: unknown): value is AiEstimateResponse {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.low === "number" && Number.isFinite(v.low) &&
+    typeof v.mid === "number" && Number.isFinite(v.mid) &&
+    typeof v.high === "number" && Number.isFinite(v.high) &&
+    typeof v.reasoning === "string" &&
+    typeof v.confidenceLevel === "string" &&
+    ["low", "medium", "high"].includes(v.confidenceLevel) &&
+    Array.isArray(v.keyFactors) &&
+    v.keyFactors.every((k) => typeof k === "string")
+  );
+}
+
+serve(async (req, info) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -32,14 +91,17 @@ serve(async (req) => {
       throw new Error("GEMINI_API_KEY is not configured");
     }
 
-    // Rate limiting by hashed IP
-    const rawIp =
-      req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
-      req.headers.get("cf-connecting-ip") ||
-      req.headers.get("x-real-ip") ||
-      "unknown";
+    const ipHash = await fingerprintFromRequest(
+      req,
+      info as unknown as { remoteAddr?: { hostname?: string } }
+    );
 
-    const ipHash = await hashIp(rawIp);
+    // Per-browser session id, supplied by the SPA. Mostly defends against
+    // header rotation: even if the IP fingerprint shifts, the same browser
+    // (same localStorage session id) still hits the same counter.
+    const rawSession = req.headers.get("x-vyl-session") ?? "";
+    const sessionId = isUuidLike(rawSession) ? rawSession : null;
+
     const windowStart = new Date(
       Date.now() - WINDOW_HOURS * 60 * 60 * 1000
     ).toISOString();
@@ -49,13 +111,28 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { count } = await supabase
+    const ipCountQuery = supabase
       .from("rate_limit_log")
       .select("*", { count: "exact", head: true })
       .eq("ip_hash", ipHash)
       .gte("created_at", windowStart);
 
-    if (IS_PRODUCTION && (count ?? 0) >= RATE_LIMIT) {
+    const sessionCountQuery = sessionId
+      ? supabase
+          .from("rate_limit_log")
+          .select("*", { count: "exact", head: true })
+          .eq("session_id", sessionId)
+          .gte("created_at", windowStart)
+      : Promise.resolve({ count: 0 });
+
+    const [{ count: ipCount }, sessionResult] = await Promise.all([
+      ipCountQuery,
+      sessionCountQuery,
+    ]);
+    const sessionCount = (sessionResult as { count?: number | null }).count ?? 0;
+    const effectiveCount = Math.max(ipCount ?? 0, sessionCount);
+
+    if (IS_PRODUCTION && effectiveCount >= RATE_LIMIT) {
       return new Response(
         JSON.stringify({
           error: "You've used your 5 AI estimates for this hour. Please try again later.",
@@ -153,8 +230,8 @@ Based on this data, provide your rate estimate in USD.`;
           }
         );
       }
-      const errorText = await response.text();
-      console.error("Gemini API error:", response.status, errorText);
+      // Don't echo the upstream body — it can include prompt fragments.
+      console.error("Gemini API error: status", response.status);
       throw new Error(`Gemini API error: ${response.status}`);
     }
 
@@ -167,20 +244,52 @@ Based on this data, provide your rate estimate in USD.`;
 
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      throw new Error("Could not parse JSON from AI response");
+      console.error("Gemini parse: no JSON object in response");
+      return new Response(
+        JSON.stringify({
+          error: "AI provider returned an unexpected shape",
+          code: "AI_INVALID_SHAPE",
+        }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    const estimate = JSON.parse(jsonMatch[0]);
+    let estimate: unknown;
+    try {
+      estimate = JSON.parse(jsonMatch[0]);
+    } catch (err) {
+      console.error("Gemini parse: invalid JSON", err instanceof Error ? err.message : "");
+      return new Response(
+        JSON.stringify({
+          error: "AI provider returned an unexpected shape",
+          code: "AI_INVALID_SHAPE",
+        }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!isAiEstimateResponse(estimate)) {
+      console.error("Gemini parse: schema mismatch");
+      return new Response(
+        JSON.stringify({
+          error: "AI provider returned an unexpected shape",
+          code: "AI_INVALID_SHAPE",
+        }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Log this request and clean up expired entries
-    await supabase.from("rate_limit_log").insert({ ip_hash: ipHash });
+    await supabase
+      .from("rate_limit_log")
+      .insert({ ip_hash: ipHash, session_id: sessionId });
     supabase.from("rate_limit_log").delete().lt("created_at", windowStart).then(() => {});
 
     return new Response(JSON.stringify(estimate), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error in estimate-rate function:", error);
+    console.error("Error in estimate-rate function:", error instanceof Error ? error.message : "unknown");
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : "Unknown error",

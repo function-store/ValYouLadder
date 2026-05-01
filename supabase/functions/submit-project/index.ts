@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sanitizeDescription, SanitizationFailedError } from "../_shared/sanitizeDescription.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -44,14 +45,26 @@ async function sendEditLinkEmail(brevoKey: string, to: string, editUrl: string) 
   });
 }
 
-async function addBrevoContact(brevoKey: string, email: string) {
+async function addBrevoContact(
+  brevoKey: string,
+  email: string,
+  unsubscribeUrl?: string,
+  unsubscribeToken?: string
+) {
   await fetch("https://api.brevo.com/v3/contacts", {
     method: "POST",
     headers: { "api-key": brevoKey, "Content-Type": "application/json" },
     body: JSON.stringify({
       email,
       updateEnabled: true,
-      attributes: { SOURCE: "submission" },
+      attributes: {
+        SOURCE: "submission",
+        // Brevo email templates can interpolate {{contact.UNSUBSCRIBE_URL}}
+        // and {{contact.UNSUBSCRIBE_TOKEN}} into the unsubscribe link so the
+        // /unsubscribe page can verify the request without enumeration risk.
+        ...(unsubscribeUrl ? { UNSUBSCRIBE_URL: unsubscribeUrl } : {}),
+        ...(unsubscribeToken ? { UNSUBSCRIBE_TOKEN: unsubscribeToken } : {}),
+      },
     }),
   });
 }
@@ -91,6 +104,27 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Sanitize description before persisting. If sanitization fails we MUST
+    // reject the submission rather than silently store unsanitized PII.
+    let sanitizedDescription: string | null = null;
+    if (body.description && typeof body.description === "string" && body.description.trim() !== "") {
+      try {
+        sanitizedDescription = await sanitizeDescription(body.description.slice(0, 500));
+      } catch (err) {
+        if (err instanceof SanitizationFailedError) {
+          return new Response(
+            JSON.stringify({
+              error:
+                "We couldn't process your description right now. Please try again in a minute, or remove identifying details and resubmit.",
+              code: "SANITIZATION_FAILED",
+            }),
+            { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        throw err;
+      }
+    }
+
     const { data: submission, error: submissionError } = await supabase
       .from("project_submissions")
       .insert({
@@ -111,7 +145,7 @@ serve(async (req) => {
         your_budget: body.yourBudget,
         days_of_work: body.daysOfWork ?? null,
         year_completed: body.yearCompleted,
-        description: body.description ? body.description.slice(0, 500) : null,
+        description: sanitizedDescription,
       })
       .select("id")
       .single();
@@ -126,7 +160,7 @@ serve(async (req) => {
 
     if (tokenError) throw tokenError;
 
-    // Handle email — transient, never stored
+    // Handle email — transient, never stored alongside the submission
     const { contactEmail, sendEditLink, newsletterOptIn } = body;
     if (contactEmail && (sendEditLink || newsletterOptIn)) {
       const brevoKey = Deno.env.get("BREVO_API_KEY");
@@ -136,7 +170,40 @@ serve(async (req) => {
 
         const tasks: Promise<void>[] = [];
         if (sendEditLink) tasks.push(sendEditLinkEmail(brevoKey, contactEmail, editUrl));
-        if (newsletterOptIn) tasks.push(addBrevoContact(brevoKey, contactEmail));
+
+        if (newsletterOptIn) {
+          // Upsert into mailing_list and capture the unsubscribe token so
+          // the Brevo contact can carry it for unsubscribe links. We rely on
+          // the DB default to mint a token on insert; on conflict we re-read.
+          const normalisedEmail = String(contactEmail).trim().toLowerCase();
+          let unsubscribeToken: string | undefined;
+          const { data: inserted, error: insertError } = await supabase
+            .from("mailing_list")
+            .insert({ email: normalisedEmail })
+            .select("unsubscribe_token")
+            .maybeSingle();
+
+          if (!insertError && inserted?.unsubscribe_token) {
+            unsubscribeToken = inserted.unsubscribe_token as string;
+          } else {
+            // Likely a unique-constraint conflict; fetch the existing token.
+            const { data: existing } = await supabase
+              .from("mailing_list")
+              .select("unsubscribe_token")
+              .eq("email", normalisedEmail)
+              .maybeSingle();
+            if (existing?.unsubscribe_token) {
+              unsubscribeToken = existing.unsubscribe_token as string;
+            }
+          }
+
+          const unsubscribeUrl = unsubscribeToken
+            ? `${siteUrl}/unsubscribe?email=${encodeURIComponent(normalisedEmail)}&token=${encodeURIComponent(unsubscribeToken)}`
+            : undefined;
+
+          tasks.push(addBrevoContact(brevoKey, contactEmail, unsubscribeUrl, unsubscribeToken));
+        }
+
         await Promise.all(tasks);
       }
     }

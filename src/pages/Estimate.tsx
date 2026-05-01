@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import PrivacyConsentCheckbox from "@/components/gdpr/PrivacyConsentCheckbox";
 import { triggerMailingListPopup } from "@/components/MailingListPopup";
-import { useCurrency, fetchRates, FALLBACK_RATES } from "@/contexts/CurrencyContext";
+import { useCurrency, fetchRates, FALLBACK_RATES, SELECTABLE_CURRENCIES } from "@/contexts/CurrencyContext";
 import PreProdBanner from "@/components/PreProdBanner";
 import { IS_PRE_PROD } from "@/lib/config";
 import {
@@ -50,6 +50,38 @@ interface DatabaseProject {
 const ESTIMATES_OPEN = !IS_PRE_PROD;
 const AI_COOLDOWN_KEY = "vyl_ai_estimate_ts";
 const AI_COOLDOWN_SECONDS = IS_PRE_PROD ? 0 : 60;
+const VYL_SESSION_KEY = "vyl_session_id";
+
+/**
+ * Per-browser session id, used as a secondary key on the AI rate limit
+ * counter so a single browser can't bypass the per-IP limit by rotating
+ * forwarded-for headers.
+ */
+function getOrCreateSessionId(): string {
+  try {
+    let id = localStorage.getItem(VYL_SESSION_KEY);
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem(VYL_SESSION_KEY, id);
+    }
+    return id;
+  } catch {
+    return crypto.randomUUID();
+  }
+}
+
+let warnedUnknownCurrency = false;
+
+/**
+ * Supabase functions.invoke wraps non-2xx responses in a FunctionsHttpError
+ * that carries `context.status`. Centralised so we don't sprinkle `as any`
+ * casts at every call-site.
+ */
+function functionStatus(error: unknown): number | undefined {
+  if (!error || typeof error !== "object") return undefined;
+  const ctx = (error as { context?: { status?: number } }).context;
+  return ctx && typeof ctx.status === "number" ? ctx.status : undefined;
+}
 
 const Estimate = () => {
   const { format: formatCurrencyFn } = useCurrency();
@@ -273,16 +305,58 @@ const Estimate = () => {
     const currentYear = new Date().getFullYear();
     const userDurationDays = DURATION_DAYS[projectLength] || 15;
 
-    const weightedItems = projects.map((p, i) => {
-      const durationDays = DURATION_DAYS[p.projectLength] || 15;
-      // Convert budget to USD before comparing — without this, 1000 HUF === 1000 USD
-      const fromRate = rates[p.currency ?? "USD"] ?? 1;
-      const budgetUSD = p.budget / fromRate;
-      const dailyRate = budgetUSD / durationDays;
-      const yearsOld = currentYear - p.yearCompleted;
-      const adjustedRate = dailyRate * Math.pow(1 + ANNUAL_INFLATION, yearsOld);
-      return { value: adjustedRate, weight: weights[i] };
-    });
+    const weightedItems = projects
+      .map((p, i) => {
+        const currency = p.currency ?? "USD";
+
+        // Skip rows with unknown currencies — silently treating them as USD
+        // (previous behavior) skews percentiles whenever a row carries a
+        // currency we can't convert.
+        if (!SELECTABLE_CURRENCIES.includes(currency) || !(currency in rates)) {
+          if (!warnedUnknownCurrency) {
+            warnedUnknownCurrency = true;
+            console.warn(
+              "Estimate: skipping projects with unknown / unconverted currency. First seen:",
+              currency
+            );
+          }
+          return null;
+        }
+
+        const fromRate = rates[currency];
+        if (!fromRate || fromRate <= 0) {
+          return null;
+        }
+
+        // Reject zero/negative budgets — they don't carry useful signal and
+        // negative budgets combined with non-integer year deltas could
+        // otherwise produce NaN through Math.pow.
+        if (!(p.budget > 0)) {
+          return null;
+        }
+
+        const durationDays = DURATION_DAYS[p.projectLength] || 15;
+        const budgetUSD = p.budget / fromRate;
+        const dailyRate = budgetUSD / durationDays;
+
+        if (!(dailyRate > 0) || !Number.isFinite(dailyRate)) {
+          return null;
+        }
+
+        const yearsOld = currentYear - p.yearCompleted;
+        const adjustedRate = dailyRate * Math.pow(1 + ANNUAL_INFLATION, yearsOld);
+
+        if (!Number.isFinite(adjustedRate)) {
+          return null;
+        }
+
+        return { value: adjustedRate, weight: weights[i] };
+      })
+      .filter((item): item is { value: number; weight: number } => item !== null);
+
+    if (weightedItems.length === 0) {
+      return null;
+    }
 
     const low = weightedPercentile(weightedItems, 0.25);
     const mid = weightedPercentile(weightedItems, 0.5);
@@ -355,6 +429,9 @@ const Estimate = () => {
           const { data, error } = await supabase.functions.invoke(
             "estimate-rate",
             {
+              headers: {
+                "x-vyl-session": getOrCreateSessionId(),
+              },
               body: {
                 projectDetails: {
                   projectType,
@@ -374,6 +451,28 @@ const Estimate = () => {
               },
             }
           );
+
+          // 502 / AI_INVALID_SHAPE — fall back to the statistical estimate
+          // rather than surfacing a hard failure to the user.
+          if (data?.code === "AI_INVALID_SHAPE" || functionStatus(error) === 502) {
+            if (statResult) {
+              toast.warning(
+                "AI returned an unexpected shape — showing the data-based estimate instead."
+              );
+              setEstimate({
+                low: statResult.low,
+                mid: statResult.mid,
+                high: statResult.high,
+                sampleSize,
+                similarProjects,
+                dataConfidence: statResult.dataConfidence,
+              });
+              await saveEstimateToDatabase(statResult, sampleSize, false);
+              setIsCalculating(false);
+              return;
+            }
+            throw new Error("AI returned an unexpected shape and no fallback estimate was available.");
+          }
 
           if (error) throw error;
 
@@ -411,7 +510,7 @@ const Estimate = () => {
         } catch (error) {
           console.error("AI estimation error:", error);
 
-          if ((error as any)?.context?.status === 429) {
+          if (functionStatus(error) === 429) {
             toast.error("You've used your 5 AI estimates for this hour. Try again later, or use the data-only estimate.");
             setIsCalculating(false);
             return;

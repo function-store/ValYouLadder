@@ -95,7 +95,7 @@ const EditSubmissionDialog = ({ submission, token, onSaved, onClose }: Props) =>
   const handleSave = async () => {
     setSaving(true);
     try {
-      const { error } = await supabase.functions.invoke("manage-submission", {
+      const { data, error } = await supabase.functions.invoke("manage-submission", {
         body: {
           submissionId: submission.id,
           token,
@@ -121,6 +121,13 @@ const EditSubmissionDialog = ({ submission, token, onSaved, onClose }: Props) =>
           },
         },
       });
+      if (data?.code === "SANITIZATION_FAILED") {
+        toast.error(
+          data.error ??
+            "We couldn't process your description right now. Please try again, or remove identifying details."
+        );
+        return;
+      }
       if (error) throw error;
       toast.success("Submission updated.");
       onSaved();

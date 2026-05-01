@@ -27,9 +27,25 @@ function basicSanitize(description: string): string {
 }
 
 /**
+ * Thrown when AI sanitization is unavailable. Callers MUST decide whether
+ * to reject the submission or drop the description — never persist the
+ * unsanitized text.
+ */
+export class SanitizationUnavailableError extends Error {
+  constructor(message = "Description sanitization is unavailable.") {
+    super(message);
+    this.name = "SanitizationUnavailableError";
+  }
+}
+
+/**
  * AI-powered sanitization that intelligently identifies and redacts
  * brand names, artist names, venues, tour names while preserving
- * legitimate industry terminology
+ * legitimate industry terminology.
+ *
+ * Fails CLOSED: throws SanitizationUnavailableError on any error so the
+ * caller can show a clear message to the user. Never silently returns
+ * the original (potentially identifying) text.
  */
 export async function sanitizeDescriptionWithAI(
   description: string | undefined
@@ -38,25 +54,46 @@ export async function sanitizeDescriptionWithAI(
     return { sanitized: "", redactions: [] };
   }
 
+  let response;
   try {
-    const { data, error } = await supabase.functions.invoke("sanitize-description", {
+    response = await supabase.functions.invoke("sanitize-description", {
       body: { description },
     });
-
-    if (error) {
-      console.error("AI sanitization error:", error);
-      // Fall back to basic sanitization
-      return { sanitized: basicSanitize(description), redactions: [] };
-    }
-
-    return {
-      sanitized: data.sanitized || basicSanitize(description),
-      redactions: data.redactions || [],
-    };
   } catch (err) {
-    console.error("Sanitization failed:", err);
-    return { sanitized: basicSanitize(description), redactions: [] };
+    console.error("Sanitization request failed:", err);
+    throw new SanitizationUnavailableError(
+      "We couldn't reach our description-cleaning service. Please try again in a moment."
+    );
   }
+
+  const { data, error } = response;
+
+  // Edge function returned a non-2xx — typically our fail-closed 422.
+  if (error) {
+    console.error("AI sanitization error:", error);
+    throw new SanitizationUnavailableError(
+      "We couldn't process your description right now. Please try again, or remove identifying details and resubmit."
+    );
+  }
+
+  if (data?.error) {
+    throw new SanitizationUnavailableError(
+      typeof data.error === "string"
+        ? data.error
+        : "We couldn't process your description right now. Please try again, or remove identifying details and resubmit."
+    );
+  }
+
+  if (typeof data?.sanitized !== "string" || data.sanitized.trim() === "") {
+    throw new SanitizationUnavailableError(
+      "We couldn't process your description right now. Please try again, or remove identifying details and resubmit."
+    );
+  }
+
+  return {
+    sanitized: data.sanitized,
+    redactions: Array.isArray(data.redactions) ? data.redactions : [],
+  };
 }
 
 /**

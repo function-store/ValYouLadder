@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { sanitizeDescription } from "../_shared/sanitizeDescription.ts";
+import { sanitizeDescription, SanitizationFailedError } from "../_shared/sanitizeDescription.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -117,7 +117,20 @@ serve(async (req) => {
       }
 
       if (typeof sanitized.description === "string" && sanitized.description.trim() !== "") {
-        sanitized.description = await sanitizeDescription(sanitized.description);
+        try {
+          sanitized.description = await sanitizeDescription(sanitized.description);
+        } catch (err) {
+          if (err instanceof SanitizationFailedError) {
+            return new Response(
+              JSON.stringify({
+                error: "Description sanitization is unavailable; clear the description field or try again.",
+                code: "SANITIZATION_FAILED",
+              }),
+              { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+          throw err;
+        }
       }
 
       const { error } = await serviceClient.from(table).update(sanitized).eq("id", id);
