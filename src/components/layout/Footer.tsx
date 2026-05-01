@@ -10,6 +10,9 @@ const Footer = () => {
           <p className="text-sm text-muted-foreground">Stay in the loop</p>
           <NewsletterSignup compact />
         </div>
+        <p className="text-xs text-muted-foreground text-center mb-4">
+          All data is community-submitted and unverified. Estimates are for informational purposes only, not professional advice.
+        </p>
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
             © {new Date().getFullYear()} ValYouLadder by{" "}

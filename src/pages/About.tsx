@@ -144,6 +144,30 @@ const About = () => {
             </div>
           </section>
 
+          {/* Disclaimer */}
+          <section className="node-card rounded-xl p-8 border border-border mb-8">
+            <h2 className="text-2xl font-semibold mb-6">Disclaimer</h2>
+            <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
+              <p>
+                ValYouLadder is a community-driven platform. All rate data is submitted anonymously
+                by individuals and is not independently verified. The figures shown on this site —
+                including database entries, statistical estimates, and AI-generated suggestions —
+                are for informational purposes only and should not be taken as professional advice.
+              </p>
+              <p>
+                Rates vary significantly based on scope, location, client relationship, experience,
+                and many other factors that cannot be fully captured in a database. Use this tool as
+                one data point among many when evaluating your market position.
+              </p>
+              <p>
+                ValYouLadder, its creator, and contributors are not liable for any decisions made
+                based on the data or estimates provided. This platform is offered "as is" without
+                warranty of any kind. By using this site, you acknowledge that rate information is
+                crowd-sourced, unverified, and may not reflect current market conditions.
+              </p>
+            </div>
+          </section>
+
           {/* Call to Action */}
           <section className="node-card rounded-xl p-8 border border-border bg-secondary/20 text-center">
             <h2 className="text-xl font-semibold mb-3">Join the Movement</h2>

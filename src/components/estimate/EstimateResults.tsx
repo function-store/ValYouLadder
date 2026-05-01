@@ -164,9 +164,9 @@ const EstimateResults = ({ estimate, formatCurrency, aiInsights }: EstimateResul
         </div>
 
         <p className="text-xs text-muted-foreground pt-2 border-t border-border">
-          This estimate is based on anonymized community data and should be used
-          as a starting point. Actual rates may vary based on specific project
-          requirements, client relationship, and market conditions.
+          This estimate is based on unverified, crowd-sourced data and is for
+          informational purposes only — not professional advice. Actual rates vary
+          significantly. ValYouLadder is not liable for decisions based on these figures.
         </p>
       </div>
     </div>
