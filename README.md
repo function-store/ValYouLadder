@@ -36,9 +36,11 @@ Dev server starts at `http://localhost:5173`.
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Start Vite dev server with HMR |
+| `npm run dev` | Start Vite dev server with HMR (uses `.env`) |
+| `npm run dev:staging` | Dev server pointing at the staging Supabase project (uses `.env.staging`) |
 | `npm run build` | Production build to `dist/` |
 | `npm run build:dev` | Development build (unminified, with source maps) |
+| `npm run build:staging` | Build against the staging Supabase project |
 | `npm run preview` | Serve the production build locally |
 | `npm run lint` | Run ESLint |
 | `npm test` | Run tests once (Vitest) |
@@ -48,7 +50,7 @@ Dev server starts at `http://localhost:5173`.
 
 ## Environment variables
 
-Create a `.env` file in the project root (see `.env.example`):
+Copy `.env.example` to `.env` and fill in your Supabase credentials:
 
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
@@ -62,9 +64,9 @@ VITE_PRE_PROD=false
 | `VITE_SUPABASE_URL` | Supabase project URL |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon key (starts with `eyJ…`) — found under **Settings > API** |
 | `VITE_SUPABASE_PROJECT_ID` | Supabase project ref |
-| `VITE_PRE_PROD` | Set to `true` to show preview banners (mock data warnings, submission lock) |
+| `VITE_PRE_PROD` | Set to `true` to show preview banners and the staging environment indicator |
 
-`.env` is gitignored. Never commit real keys.
+`.env` and `.env.production` are gitignored. Never commit real keys. See [Staging / pre-production](#staging--pre-production) for the multi-environment setup.
 
 ---
 
@@ -161,7 +163,7 @@ src/
     projectTypes    Shared constants (project types, skills, countries, etc.)
     mySubmissions   localStorage token store for anonymous submission management
     sanitize        Client-side PII validation
-    config          IS_PRE_PROD flag
+    config          IS_PRE_PROD, SUPABASE_PROJECT_ID, ENV_LABEL
   components/
     BananaParticles Canvas particle background (mouse repulsion, constellation lines, click ripples)
     NewsletterSignup Inline newsletter signup (compact for footer, full for landing)
@@ -234,6 +236,109 @@ npx vercel deploy --prod
 ```
 
 After deploying, make sure the `SITE_URL` secret in Supabase matches the live URL so email edit links resolve correctly.
+
+---
+
+## Staging / pre-production
+
+The project uses two Supabase projects (staging and production) and Vercel's preview deployments to keep untested changes off the live site.
+
+### Architecture
+
+```
+┌─────────────────────┐       ┌──────────────────────────┐
+│  Feature branch      │──────▶│  Vercel preview deploy    │
+│  (any non-main)      │       │  VITE_PRE_PROD=true       │
+│                      │       │  → staging Supabase        │
+└─────────────────────┘       └──────────────────────────┘
+
+┌─────────────────────┐       ┌──────────────────────────┐
+│  main branch         │──────▶│  Vercel production deploy │
+│                      │       │  VITE_PRE_PROD=false      │
+│                      │       │  → production Supabase     │
+└─────────────────────┘       └──────────────────────────┘
+```
+
+### Setting up the staging Supabase project
+
+1. Create a new project in the [Supabase dashboard](https://supabase.com/dashboard) (e.g. "creative-compass-staging"). The free tier is sufficient.
+2. Apply all migrations:
+   ```sh
+   npx supabase link --project-ref <staging-project-id>
+   npx supabase db push
+   ```
+3. Set edge function secrets:
+   ```sh
+   npx supabase secrets set \
+     GEMINI_API_KEY=your-key \
+     BREVO_API_KEY=your-key \
+     SITE_URL=https://your-vercel-preview-url \
+     --project-ref <staging-project-id>
+   ```
+4. Deploy edge functions:
+   ```sh
+   npx supabase functions deploy --project-ref <staging-project-id>
+   ```
+5. Re-link to production when done:
+   ```sh
+   npx supabase link --project-ref ecflucezmmvzpereikik
+   ```
+
+### Configuring Vercel environment variables
+
+In the Vercel dashboard under **Settings > Environment Variables**, set each variable with the appropriate scope:
+
+| Variable | Production scope | Preview scope |
+|----------|-----------------|---------------|
+| `VITE_SUPABASE_URL` | `https://<prod>.supabase.co` | `https://<staging>.supabase.co` |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | prod anon key | staging anon key |
+| `VITE_SUPABASE_PROJECT_ID` | prod project ref | staging project ref |
+| `VITE_PRE_PROD` | `false` | `true` |
+
+After this, every push to a non-main branch gets a Vercel preview deployment that talks to the staging database. Merges to `main` deploy to production with the production database.
+
+### Local development with staging
+
+Fill in `.env.staging` with the staging project credentials, then:
+
+```sh
+npm run dev:staging     # dev server → staging Supabase
+npm run build:staging   # build against staging Supabase
+```
+
+The default `npm run dev` uses `.env` (which should contain whichever project you work against most often).
+
+Vite's mode system loads the env file matching the mode: `--mode staging` loads `.env.staging`, the default production build loads `.env.production` (if present), and development loads `.env`.
+
+### Deploying schema changes
+
+Always apply migrations to staging first, verify, then apply to production:
+
+```sh
+# 1. Apply to staging
+npx supabase db push --project-ref <staging-project-id>
+
+# 2. Test on a preview deployment or locally via dev:staging
+
+# 3. Apply to production
+npx supabase db push --project-ref ecflucezmmvzpereikik
+```
+
+If the migration adds or changes edge function behavior, deploy edge functions to both projects in the same order.
+
+### Deploying edge functions to a specific project
+
+```sh
+# Staging
+npx supabase functions deploy --project-ref <staging-project-id>
+
+# Production
+npx supabase functions deploy --project-ref ecflucezmmvzpereikik
+```
+
+### What the staging banner shows
+
+When `VITE_PRE_PROD=true`, a yellow banner appears on the Database, Estimate, and hero sections showing the Supabase project ID. This makes it immediately obvious which backend you're connected to.
 
 ---
 
