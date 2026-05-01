@@ -36,7 +36,7 @@ export async function fetchRates(): Promise<Record<string, number>> {
     }
   }
 
-  const res = await fetch("https://api.frankfurter.app/latest?from=USD");
+  const res = await fetch("https://api.frankfurter.dev/v1/latest?from=USD");
   if (!res.ok) throw new Error("rates fetch failed");
   const data = await res.json();
   const rates: Record<string, number> = { USD: 1, ...data.rates };
