@@ -21,7 +21,7 @@ import {
   computeSkillIdf,
   weightedPercentile,
   computeESS,
-  essToConfidence,
+  confidenceFromMetrics,
 } from "@/lib/estimateAlgorithm";
 
 interface DatabaseProject {
@@ -291,7 +291,11 @@ const Estimate = () => {
     const scaledHigh = high * userDurationDays;
 
     const ess = computeESS(weights);
-    const dataConfidence = essToConfidence(ess);
+    // Top match score gates confidence so niche queries with weak matches
+    // don't report "high" purely on ESS magnitude. Projects are sorted by
+    // score descending in fetchSimilarProjects, so projects[0] is the best match.
+    const topScore = projects[0]?.similarityScore ?? 0;
+    const dataConfidence = confidenceFromMetrics(ess, topScore);
 
     return {
       low: Math.round(scaledLow),
@@ -382,7 +386,8 @@ const Estimate = () => {
           };
 
           const ess = computeESS(weights);
-          const dataConfidence = essToConfidence(ess);
+          const topScore = similarProjects[0]?.similarityScore ?? 0;
+          const dataConfidence = confidenceFromMetrics(ess, topScore);
 
           setEstimate({
             ...estimates,

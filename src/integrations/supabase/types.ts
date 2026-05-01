@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -20,6 +20,7 @@ export type Database = {
           client_type: string
           created_at: string
           currency: string | null
+          days_of_work: number | null
           expertise_level: string
           high_estimate: number
           id: string
@@ -39,6 +40,7 @@ export type Database = {
           client_type: string
           created_at?: string
           currency?: string | null
+          days_of_work?: number | null
           expertise_level: string
           high_estimate: number
           id?: string
@@ -58,6 +60,7 @@ export type Database = {
           client_type?: string
           created_at?: string
           currency?: string | null
+          days_of_work?: number | null
           expertise_level?: string
           high_estimate?: number
           id?: string
@@ -74,21 +77,44 @@ export type Database = {
         }
         Relationships: []
       }
+      mailing_list: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+        }
+        Relationships: []
+      }
       project_submissions: {
         Row: {
           client_country: string | null
           client_type: string
+          contracted_as: string | null
           created_at: string
           currency: string
+          days_of_work: number | null
           description: string | null
           expertise_level: string
           id: string
           project_length: string
           project_location: string
           project_type: string
+          rate_representativeness: string | null
           rate_type: string | null
           skills: string[]
+          standard_rate: number | null
           total_budget: number | null
+          updated_at: string | null
           year_completed: number
           your_budget: number
           your_role: string | null
@@ -96,17 +122,22 @@ export type Database = {
         Insert: {
           client_country?: string | null
           client_type: string
+          contracted_as?: string | null
           created_at?: string
           currency?: string
+          days_of_work?: number | null
           description?: string | null
           expertise_level: string
           id?: string
           project_length: string
           project_location: string
           project_type: string
+          rate_representativeness?: string | null
           rate_type?: string | null
           skills?: string[]
+          standard_rate?: number | null
           total_budget?: number | null
+          updated_at?: string | null
           year_completed: number
           your_budget: number
           your_role?: string | null
@@ -114,20 +145,43 @@ export type Database = {
         Update: {
           client_country?: string | null
           client_type?: string
+          contracted_as?: string | null
           created_at?: string
           currency?: string
+          days_of_work?: number | null
           description?: string | null
           expertise_level?: string
           id?: string
           project_length?: string
           project_location?: string
           project_type?: string
+          rate_representativeness?: string | null
           rate_type?: string | null
           skills?: string[]
-          total_budget?: number
+          standard_rate?: number | null
+          total_budget?: number | null
+          updated_at?: string | null
           year_completed?: number
           your_budget?: number
           your_role?: string | null
+        }
+        Relationships: []
+      }
+      rate_limit_log: {
+        Row: {
+          created_at: string
+          id: string
+          ip_hash: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_hash: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_hash?: string
         }
         Relationships: []
       }
@@ -298,3 +352,4 @@ export const Constants = {
     },
   },
 } as const
+<claude-code-hint v="1" type="plugin" value="supabase@claude-plugins-official" />

@@ -7,6 +7,7 @@ import {
   weightedPercentile,
   computeESS,
   essToConfidence,
+  confidenceFromMetrics,
 } from "./estimateAlgorithm";
 
 // --- DURATION_DAYS ---
@@ -155,6 +156,38 @@ describe("essToConfidence", () => {
     expect(essToConfidence(4.9)).toBe("low");
     expect(essToConfidence(1)).toBe("low");
     expect(essToConfidence(0)).toBe("low");
+  });
+});
+
+// --- confidenceFromMetrics ---
+describe("confidenceFromMetrics", () => {
+  it("returns 'high' when both ESS >= 8 AND topScore >= 60", () => {
+    expect(confidenceFromMetrics(8, 60)).toBe("high");
+    expect(confidenceFromMetrics(20, 80)).toBe("high");
+    expect(confidenceFromMetrics(25, 84)).toBe("high");
+  });
+
+  it("does NOT return 'high' when ESS strong but topScore weak (the F6 fix)", () => {
+    // The Notch+UE niche query: ESS 16.28, topScore 47.9 → must NOT be 'high'
+    expect(confidenceFromMetrics(16.28, 47.9)).toBe("medium");
+    expect(confidenceFromMetrics(20, 50)).toBe("medium");
+  });
+
+  it("does NOT return 'high' when topScore strong but ESS weak", () => {
+    // Single very strong match: high topScore but ESS = 1
+    expect(confidenceFromMetrics(1, 80)).toBe("medium");
+  });
+
+  it("returns 'medium' when ESS >= 5 OR topScore >= 40", () => {
+    expect(confidenceFromMetrics(5, 0)).toBe("medium");
+    expect(confidenceFromMetrics(0, 40)).toBe("medium");
+    expect(confidenceFromMetrics(7.9, 39)).toBe("medium");
+  });
+
+  it("returns 'low' when both signals weak", () => {
+    expect(confidenceFromMetrics(4.9, 39)).toBe("low");
+    expect(confidenceFromMetrics(0, 0)).toBe("low");
+    expect(confidenceFromMetrics(2, 15)).toBe("low");
   });
 });
 

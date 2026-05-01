@@ -12,12 +12,20 @@ export const DURATION_DAYS: Record<string, number> = {
   "1-3-months": 45,
   "3-6-months": 90,
   "6plus-months": 180,
-  // Legacy values — kept for backward compat with existing DB entries
-  "one-off": 1,
+  // Legacy values — kept for backward compat with existing DB entries.
+  //
+  // `one-off` and `performance` were originally mapped to 1 day, which produced
+  // implausible per-day rates ($8000/day median for one-off, $3000/day for
+  // performance) — 5–14× the rate of comparable buckets like `medium` ($556/day)
+  // and `short` ($1714/day). See context/scientific-review-findings.md F4/F5
+  // and probe 07. Re-mapped to bring per-day medians into the same band:
+  //   - `one-off`    1 → 7  (single deliverable, ~1 week of focused work)
+  //   - `performance` 1 → 3 (1 stage day + ~2 days prep)
+  "one-off": 7,
   "short": 7,
   "medium": 45,
   "long": 120,
-  "performance": 1,
+  "performance": 3,
   "tour": 30,
   "installation-temp": 30,
   "installation-perm": 60,
@@ -95,9 +103,40 @@ export const computeESS = (weights: number[]): number => {
   return (sumW * sumW) / sumW2;
 };
 
-/** Map ESS to a human-readable confidence level */
+/**
+ * @deprecated Use `confidenceFromMetrics(ess, topScore)` instead.
+ *
+ * ESS-only confidence ignores absolute match quality. Across realistic queries
+ * (probe 08, see context/scientific-review-findings.md F6), every query reports
+ * "high" because ESS = (Σw)²/Σw² is large by construction once the qualifying
+ * pool exceeds ~10 projects with weights in the 30–80 range — even when the
+ * single best match scores ~48 out of theoretical max ~122.
+ *
+ * Kept for backward compat. New call sites should pass the top match score so
+ * niche queries with weak matches degrade to "medium" or "low".
+ */
 export const essToConfidence = (ess: number): "high" | "medium" | "low" => {
   if (ess >= 8) return "high";
   if (ess >= 5) return "medium";
+  return "low";
+};
+
+/**
+ * Confidence gated on BOTH effective sample size AND absolute match quality.
+ *
+ * Floors come from probe 06 score distributions (context/scientific-review-findings.md F6):
+ *   - 60: a "genuine" match — e.g. project_type (20) + client_type (25) + ≥2/3 skill weight ≈ 65
+ *   - 40: a "partial" match — e.g. project_type + 1/2-skill + recency ≈ 38
+ *
+ * - high   when ess ≥ 8 AND topScore ≥ 60
+ * - medium when ess ≥ 5 OR  topScore ≥ 40
+ * - low    otherwise
+ */
+export const confidenceFromMetrics = (
+  ess: number,
+  topScore: number
+): "high" | "medium" | "low" => {
+  if (ess >= 8 && topScore >= 60) return "high";
+  if (ess >= 5 || topScore >= 40) return "medium";
   return "low";
 };
