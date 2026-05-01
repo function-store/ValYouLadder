@@ -47,6 +47,7 @@ interface DatabaseProject {
   description: string | null;
 }
 
+const ESTIMATES_OPEN = !IS_PRE_PROD;
 const AI_COOLDOWN_KEY = "vyl_ai_estimate_ts";
 const AI_COOLDOWN_SECONDS = IS_PRE_PROD ? 0 : 60;
 
@@ -557,14 +558,16 @@ const Estimate = () => {
                 size="xl"
                 className="w-full gap-2"
                 onClick={calculateEstimate}
-                disabled={!canCalculate || isCalculating || (useAI && aiCooldownRemaining > 0)}
+                disabled={!ESTIMATES_OPEN || !canCalculate || isCalculating || (useAI && aiCooldownRemaining > 0)}
               >
                 {useAI ? (
                   <Sparkles className="h-5 w-5" />
                 ) : (
                   <Calculator className="h-5 w-5" />
                 )}
-                {isCalculating
+                {!ESTIMATES_OPEN
+                  ? "Estimates not open yet"
+                  : isCalculating
                   ? useAI
                     ? "AI Analyzing..."
                     : "Calculating..."
