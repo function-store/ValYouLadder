@@ -14,7 +14,7 @@ import PrivacyConsentCheckbox from "@/components/gdpr/PrivacyConsentCheckbox";
 import { triggerMailingListPopup } from "@/components/MailingListPopup";
 import { useCurrency, fetchRates, FALLBACK_RATES, SELECTABLE_CURRENCIES } from "@/contexts/CurrencyContext";
 import PreProdBanner from "@/components/PreProdBanner";
-import { IS_PRE_PROD, IS_ESTIMATES_OPEN } from "@/lib/config";
+import { IS_ESTIMATES_OPEN } from "@/lib/config";
 import {
   DURATION_DAYS,
   MIN_SIMILARITY_THRESHOLD,
@@ -49,7 +49,7 @@ interface DatabaseProject {
 
 const ESTIMATES_OPEN = IS_ESTIMATES_OPEN;
 const AI_COOLDOWN_KEY = "vyl_ai_estimate_ts";
-const AI_COOLDOWN_SECONDS = IS_PRE_PROD ? 0 : 60;
+const AI_COOLDOWN_SECONDS = IS_ESTIMATES_OPEN ? 60 : 0;
 const VYL_SESSION_KEY = "vyl_session_id";
 
 /**
@@ -587,7 +587,7 @@ const Estimate = () => {
     <Layout>
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
-          <PreProdBanner message="Estimates are based on mock data only. Results do not reflect real market rates." />
+          {!IS_ESTIMATES_OPEN && <PreProdBanner message="Estimates are based on mock data only. Results do not reflect real market rates." />}
 
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-6">

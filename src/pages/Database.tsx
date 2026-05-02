@@ -17,9 +17,8 @@ import ProjectDetailDialog from "@/components/database/ProjectDetailDialog";
 import { sanitizeDescription } from "@/lib/sanitizeSubmission";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import PreProdBanner from "@/components/PreProdBanner";
 import SeedDataCallout from "@/components/SeedDataCallout";
-import { IS_PRE_PROD, IS_DB_OPEN } from "@/lib/config";
+import { IS_DB_OPEN } from "@/lib/config";
 
 const Database = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -146,8 +145,6 @@ const Database = () => {
               Browse anonymized project data from the creative tech community. Filter by type, client, or search by skills.
             </p>
           </div>
-
-          <PreProdBanner message="All entries shown here are mock data. None of it represents real project submissions." />
 
           {!IS_DB_OPEN && (
             <div className="mt-12 text-center py-20 space-y-4">
