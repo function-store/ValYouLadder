@@ -1,4 +1,5 @@
 import { TrendingUp, Users, Calendar, Sparkles, Brain, Lightbulb, ShieldCheck, HelpCircle, AlertTriangle } from "lucide-react";
+import BrandName from "@/components/BrandName";
 import SimilarProjectsList, { SimilarProject } from "./SimilarProjectsList";
 import { Badge } from "@/components/ui/badge";
 import SeedDataCallout from "@/components/SeedDataCallout";
@@ -197,7 +198,7 @@ const EstimateResults = ({ estimate, formatCurrency, aiInsights }: EstimateResul
         <p className="text-xs text-muted-foreground pt-2 border-t border-border">
           This estimate is based on unverified, crowd-sourced data and is for
           informational purposes only — not professional advice. Actual rates vary
-          significantly. ValYouLadder is not liable for decisions based on these figures.
+          significantly. <BrandName /> is not liable for decisions based on these figures.
         </p>
       </div>
     </div>

@@ -5,6 +5,7 @@ import { Target, Users, TrendingUp, Shield, Heart, Mail, ArrowRight } from "luci
 import NewsletterSignup from "@/components/NewsletterSignup";
 
 import { IS_SUBMISSIONS_OPEN as SUBMISSIONS_OPEN } from "@/lib/config";
+import BrandName from "@/components/BrandName";
 
 const About = () => {
   return (
@@ -103,7 +104,7 @@ const About = () => {
                   <a href="https://www.derealstudio.com/" target="_blank" rel="noopener noreferrer" className="text-primary font-medium hover:text-primary/80 transition-colors">DEREAL Studio</a> and an active educator who develops and shares tools for the creative-tech community.
                 </p>
                 <p>
-                  ValYouLadder grew out of a real frustration: the creative-tech industry has no shared language around rates. This tool is Dan's attempt to change that — built for the community, by the community.
+                  <BrandName /> grew out of a real frustration: the creative-tech industry has no shared language around rates. This tool is Dan's attempt to change that — built for the community, by the community.
                 </p>
               </div>
             </div>
@@ -119,7 +120,7 @@ const About = () => {
             </div>
             <div className="space-y-4 text-muted-foreground leading-relaxed mb-6">
               <p>
-                ValYouLadder is a community project run by{" "}
+                <BrandName /> is a community project run by{" "}
                 <a href="https://functionstore.xyz/link-in-bio" target="_blank" rel="noopener noreferrer" className="text-foreground font-medium hover:text-primary transition-colors">Function Store</a>. Keeping the
                 website up, the database running, and new features coming takes real money and time.
               </p>
@@ -153,7 +154,7 @@ const About = () => {
             <h2 className="text-2xl font-semibold mb-6">Disclaimer</h2>
             <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
               <p>
-                ValYouLadder is a community-driven platform. All rate data is submitted anonymously
+                <BrandName /> is a community-driven platform. All rate data is submitted anonymously
                 by individuals and is not independently verified. The figures shown on this site —
                 including database entries, statistical estimates, and AI-generated suggestions —
                 are for informational purposes only and should not be taken as professional advice.
@@ -164,7 +165,7 @@ const About = () => {
                 one data point among many when evaluating your market position.
               </p>
               <p>
-                ValYouLadder, its creator, and contributors are not liable for any decisions made
+                <BrandName />, its creator, and contributors are not liable for any decisions made
                 based on the data or estimates provided. This platform is offered "as is" without
                 warranty of any kind. By using this site, you acknowledge that rate information is
                 crowd-sourced, unverified, and may not reflect current market conditions.

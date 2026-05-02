@@ -590,16 +590,13 @@ const Estimate = () => {
           {!IS_ESTIMATES_OPEN && <PreProdBanner message="Estimates are based on mock data only. Results do not reflect real market rates." />}
 
           <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-6">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-sm font-mono text-primary">AI-Powered</span>
-            </div>
             <h1 className="text-3xl md:text-4xl font-bold mb-4">
               Get a Rate <span className="text-primary">Estimate</span>
             </h1>
             <p className="text-muted-foreground max-w-lg mx-auto">
-              Input your project details and our AI will analyze the community
-              database to suggest a competitive rate.
+              Your project details are matched against real community submissions
+              using a weighted statistical model. Enable AI for contextual
+              reasoning on top — but the numbers always come from the data first.
             </p>
           </div>
 

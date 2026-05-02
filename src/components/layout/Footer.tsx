@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Heart, Mail } from "lucide-react";
 import NewsletterSignup from "@/components/NewsletterSignup";
+import BrandName from "@/components/BrandName";
 
 const Footer = () => {
   return (
@@ -15,7 +16,7 @@ const Footer = () => {
         </p>
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} ValYouLadder by{" "}
+            © {new Date().getFullYear()} <BrandName /> by{" "}
             <a
               href="https://patreon.com/function_store"
               target="_blank"

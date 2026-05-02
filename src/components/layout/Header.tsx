@@ -6,6 +6,7 @@ import { useState } from "react";
 import { hasStoredSubmissions } from "@/lib/mySubmissions";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { CURRENCY_OPTIONS } from "@/lib/projectTypes";
+import BrandName from "@/components/BrandName";
 
 const Header = () => {
   const location = useLocation();
@@ -33,7 +34,7 @@ const Header = () => {
               <span className="text-lg leading-none">🪜</span>
             </div>
             <span className="font-mono font-semibold text-lg tracking-tight">
-              Val<span className="text-primary">You</span>Ladder
+              <BrandName />
             </span>
           </Link>
 

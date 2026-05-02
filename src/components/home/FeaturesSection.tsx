@@ -13,8 +13,8 @@ const features = [
   },
   {
     icon: Lightbulb,
-    title: "AI-Powered Estimates",
-    description: "Get intelligent rate suggestions based on community data and your project specifics.",
+    title: "Data-Backed Estimates",
+    description: "Rate ranges built from real submissions, weighted by similarity. AI adds optional context — the data always comes first.",
   },
   {
     icon: Users,
