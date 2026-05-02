@@ -71,6 +71,7 @@ interface DraftPayload {
   newsletterOptIn: boolean;
   privacyConsent: boolean;
   savedAt: string;
+  preferencesOnly?: boolean;
 }
 
 function readDraft(): DraftPayload | null {
@@ -167,11 +168,13 @@ const SubmitProject = () => {
     if (typeof draft.newsletterOptIn === "boolean") setNewsletterOptIn(draft.newsletterOptIn);
     if (typeof draft.privacyConsent === "boolean") setPrivacyConsent(draft.privacyConsent);
 
-    setDraftRestored(true);
-    toast({
-      title: "We restored your draft",
-      description: "Your previous answers were saved on this device.",
-    });
+    if (!draft.preferencesOnly) {
+      setDraftRestored(true);
+      toast({
+        title: "We restored your draft",
+        description: "Your previous answers were saved on this device.",
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -336,8 +339,18 @@ const SubmitProject = () => {
       if (fnError) throw fnError;
       addStoredSubmission(fnData.submissionId, fnData.token);
 
-      // Submission persisted server-side — we no longer need the local draft.
-      clearDraft();
+      // Submission persisted — clear the draft but keep sticky preferences.
+      const vals = form.getValues();
+      writeDraft({
+        form: { currency: vals.currency, projectLocation: vals.projectLocation, clientCountry: vals.clientCountry },
+        selectedSkills: [],
+        contactEmail,
+        sendEditLink,
+        newsletterOptIn,
+        privacyConsent: false,
+        preferencesOnly: true,
+        savedAt: new Date().toISOString(),
+      });
       setIsDirty(false);
 
       toast({
