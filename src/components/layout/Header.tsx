@@ -4,12 +4,8 @@ import SearchableCombobox from "@/components/ui/searchable-combobox";
 import { Database, FileText, Calculator, Menu, X, Folder } from "lucide-react";
 import { useState } from "react";
 import { hasStoredSubmissions } from "@/lib/mySubmissions";
-import { useCurrency, SELECTABLE_CURRENCIES } from "@/contexts/CurrencyContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { CURRENCY_OPTIONS } from "@/lib/projectTypes";
-
-const DISPLAY_CURRENCY_OPTIONS = CURRENCY_OPTIONS.filter((c) =>
-  SELECTABLE_CURRENCIES.includes(c.value)
-);
 
 const Header = () => {
   const location = useLocation();
@@ -56,7 +52,7 @@ const Header = () => {
               </Link>
             ))}
             <SearchableCombobox
-              options={DISPLAY_CURRENCY_OPTIONS}
+              options={CURRENCY_OPTIONS}
               value={displayCurrency}
               onChange={setDisplayCurrency}
               placeholder="Currency"

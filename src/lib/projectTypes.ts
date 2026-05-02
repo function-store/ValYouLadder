@@ -125,7 +125,6 @@ export const CURRENCY_OPTIONS = [
   { value: "GTQ", label: "GTQ — Guatemalan Quetzal" },
   { value: "JMD", label: "JMD — Jamaican Dollar" },
   { value: "TTD", label: "TTD — Trinidad & Tobago Dollar" },
-  { value: "Other", label: "Other" },
 ] as const;
 
 export const CURRENCIES = CURRENCY_OPTIONS.map((c) => c.value) as unknown as readonly string[];

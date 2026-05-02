@@ -20,6 +20,43 @@ export const FALLBACK_RATES: Record<string, number> = {
 export const SELECTABLE_CURRENCIES = Object.keys(FALLBACK_RATES);
 
 const LS_CURRENCY_KEY = "valyouladder_currency";
+
+const REGION_CURRENCY: Record<string, string> = {
+  US: "USD",
+  GB: "GBP", AU: "AUD", CA: "CAD", CH: "CHF", HU: "HUF",
+  NO: "NOK", SE: "SEK", DK: "DKK", JP: "JPY", BR: "BRL", MX: "MXN",
+  NZ: "NZD", HK: "HKD", SG: "SGD",
+  CZ: "CZK", PL: "PLN", RO: "RON", BG: "BGN", RS: "RSD",
+  UA: "UAH", GE: "GEL", TR: "TRY", RU: "RUB", KZ: "KZT",
+  AZ: "AZN", AM: "AMD", IL: "ILS", AE: "AED", SA: "SAR",
+  QA: "QAR", KW: "KWD", BH: "BHD", EG: "EGP", MA: "MAD",
+  TN: "TND", DZ: "DZD", ZA: "ZAR", NG: "NGN", KE: "KES",
+  GH: "GHS", ET: "ETB", TZ: "TZS", IN: "INR", PK: "PKR",
+  BD: "BDT", LK: "LKR", NP: "NPR", CN: "CNY", KR: "KRW",
+  TW: "TWD", TH: "THB", ID: "IDR", MY: "MYR", PH: "PHP",
+  VN: "VND", AR: "ARS", CL: "CLP", CO: "COP", PE: "PEN",
+  UY: "UYU", CR: "CRC", GT: "GTQ", JM: "JMD", TT: "TTD",
+  // Eurozone
+  DE: "EUR", AT: "EUR", FR: "EUR", IT: "EUR", ES: "EUR", NL: "EUR",
+  BE: "EUR", PT: "EUR", FI: "EUR", IE: "EUR", GR: "EUR", SK: "EUR",
+  SI: "EUR", EE: "EUR", LV: "EUR", LT: "EUR", LU: "EUR", MT: "EUR",
+  CY: "EUR", HR: "EUR",
+};
+
+const LANG_CURRENCY: Record<string, string> = {
+  ja: "JPY", hu: "HUF", nb: "NOK", nn: "NOK", no: "NOK", sv: "SEK", da: "DKK",
+  ko: "KRW", th: "THB", vi: "VND", id: "IDR", ms: "MYR",
+  zh: "CNY", uk: "UAH", tr: "TRY", he: "ILS", ar: "AED",
+};
+
+function inferCurrencyFromLocale(): string {
+  const locale = navigator.language ?? "en-US";
+  const region = locale.split("-")[1]?.toUpperCase();
+  if (region && region in REGION_CURRENCY) return REGION_CURRENCY[region];
+  const lang = locale.split("-")[0].toLowerCase();
+  return LANG_CURRENCY[lang] ?? "USD";
+}
+
 const LS_RATES_KEY = "valyouladder_rates";
 const RATES_TTL_MS = 60 * 60 * 1000; // 1 hour
 
@@ -73,7 +110,7 @@ const CurrencyContext = createContext<CurrencyContextValue>({
 
 export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
   const [displayCurrency, setDisplayCurrencyState] = useState<string>(
-    () => localStorage.getItem(LS_CURRENCY_KEY) ?? "USD"
+    () => localStorage.getItem(LS_CURRENCY_KEY) ?? inferCurrencyFromLocale()
   );
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
   const [ratesLoading, setRatesLoading] = useState(true);
