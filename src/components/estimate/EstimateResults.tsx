@@ -1,4 +1,4 @@
-import { TrendingUp, Users, Calendar, Sparkles, Brain, Lightbulb, ShieldCheck, HelpCircle } from "lucide-react";
+import { TrendingUp, Users, Calendar, Sparkles, Brain, Lightbulb, ShieldCheck, HelpCircle, AlertTriangle } from "lucide-react";
 import SimilarProjectsList, { SimilarProject } from "./SimilarProjectsList";
 import { Badge } from "@/components/ui/badge";
 import SeedDataCallout from "@/components/SeedDataCallout";
@@ -41,7 +41,7 @@ const EstimateResults = ({ estimate, formatCurrency, aiInsights }: EstimateResul
     <div className="space-y-6">
       <SeedDataCallout />
 
-      <div className="node-card rounded-xl p-6 border border-primary/30 space-y-6">
+      <div className={`node-card rounded-xl p-6 border space-y-6 ${estimate.dataConfidence === "low" ? "border-yellow-500/40" : "border-primary/30"}`}>
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-primary">
             <TrendingUp className="h-5 w-5" />
@@ -52,22 +52,31 @@ const EstimateResults = ({ estimate, formatCurrency, aiInsights }: EstimateResul
           <span className="text-xs text-muted-foreground font-mono">approx. USD baseline</span>
         </div>
 
+        {estimate.dataConfidence === "low" && (
+          <div className="flex items-start gap-3 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-600 dark:text-yellow-400">
+            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+            <span>Limited matching data — this estimate is a rough guide only. Results will improve as more projects are submitted.</span>
+          </div>
+        )}
+
         <div className="grid grid-cols-3 gap-4 text-center">
           <div className="space-y-1">
             <div className="text-sm text-muted-foreground">Low</div>
-            <div className="text-xl font-mono font-bold">
+            <div className={`text-xl font-mono font-bold ${estimate.dataConfidence === "low" ? "text-muted-foreground" : ""}`}>
               {formatCurrency(estimate.low, "USD")}
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-sm text-primary">Suggested</div>
-            <div className="text-3xl font-mono font-bold text-primary glow-text">
+            <div className={`text-sm ${estimate.dataConfidence === "low" ? "text-muted-foreground" : "text-primary"}`}>
+              {estimate.dataConfidence === "low" ? "Rough mid" : "Suggested"}
+            </div>
+            <div className={`text-3xl font-mono font-bold ${estimate.dataConfidence === "low" ? "text-muted-foreground" : "text-primary glow-text"}`}>
               {formatCurrency(estimate.mid, "USD")}
             </div>
           </div>
           <div className="space-y-1">
             <div className="text-sm text-muted-foreground">High</div>
-            <div className="text-xl font-mono font-bold">
+            <div className={`text-xl font-mono font-bold ${estimate.dataConfidence === "low" ? "text-muted-foreground" : ""}`}>
               {formatCurrency(estimate.high, "USD")}
             </div>
           </div>
@@ -75,7 +84,7 @@ const EstimateResults = ({ estimate, formatCurrency, aiInsights }: EstimateResul
 
         <div className="h-2 rounded-full bg-secondary overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-muted via-primary to-muted"
+            className={`h-full bg-gradient-to-r ${estimate.dataConfidence === "low" ? "from-muted via-yellow-500/50 to-muted" : "from-muted via-primary to-muted"}`}
             style={{ width: "100%" }}
           />
         </div>
