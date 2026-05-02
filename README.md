@@ -56,7 +56,6 @@ Copy `.env.example` to `.env` and fill in your Supabase credentials:
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-jwt-key
 VITE_SUPABASE_PROJECT_ID=your-project-ref
-VITE_PRE_PROD=false
 ```
 
 | Variable | Description |
@@ -64,7 +63,9 @@ VITE_PRE_PROD=false
 | `VITE_SUPABASE_URL` | Supabase project URL |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon key (starts with `eyJ…`) — found under **Settings > API** |
 | `VITE_SUPABASE_PROJECT_ID` | Supabase project ref |
-| `VITE_PRE_PROD` | Set to `true` to show preview banners and the staging environment indicator |
+| `VITE_DB_OPEN` | Set to `false` to hide the database (default: open) |
+| `VITE_SUBMISSIONS_OPEN` | Set to `false` to disable new submissions (default: open) |
+| `VITE_ESTIMATES_OPEN` | Set to `false` to disable the estimation tool (default: open) |
 
 `.env` and `.env.production` are gitignored. Never commit real keys. See [Staging / pre-production](#staging--pre-production) for the multi-environment setup.
 
@@ -152,22 +153,22 @@ src/
     submit/         Edit submission dialog, verification step
     gdpr/           Privacy consent checkbox
     home/           Landing page sections (Hero, Features, CTA, etc.)
+    BrandName       Renders "ValYouLadder" with the "You" accent — use everywhere the brand name appears
+    BananaParticles Canvas particle background (mouse repulsion, constellation lines, click ripples)
+    NewsletterSignup Inline newsletter signup (compact for footer, full for landing)
+    PreProdBanner   Yellow warning banner — rendered by callers when a feature gate is closed
   contexts/
     AuthContext     Supabase auth + admin role check
-    CurrencyContext Live exchange rates (frankfurter.app, 1hr cache), format()
+    CurrencyContext Live exchange rates (frankfurter.app, 1hr cache), locale-inferred default, format()
   hooks/            useMobile, useToast
   integrations/
     supabase/       Supabase client + auto-generated DB types
   lib/
     estimation      IDF-weighted similarity algorithm
-    projectTypes    Shared constants (project types, skills, countries, etc.)
+    projectTypes    Shared constants (project types, skills, countries, currencies, etc.)
     mySubmissions   localStorage token store for anonymous submission management
     sanitize        Client-side PII validation
-    config          IS_PRE_PROD, SUPABASE_PROJECT_ID, ENV_LABEL
-  components/
-    BananaParticles Canvas particle background (mouse repulsion, constellation lines, click ripples)
-    NewsletterSignup Inline newsletter signup (compact for footer, full for landing)
-    PreProdBanner   Preview mode warning banner
+    config          Feature gates: IS_DB_OPEN, IS_SUBMISSIONS_OPEN, IS_ESTIMATES_OPEN, SUPABASE_PROJECT_ID
 supabase/
   functions/        Deno edge functions
   migrations/       SQL migration files
@@ -209,21 +210,18 @@ public/
 
 See [ALGORITHM.md](./ALGORITHM.md) for a full breakdown of the similarity scoring, rate normalization, representativeness weighting, ESS confidence, and AI grounding logic.
 
-
-- **Estimation engine:** IDF-weighted skill similarity, recency-adjusted daily rates, weighted percentile calculations (p25/p50/p75)
-- **AI enhancement:** Optional Gemini 2.5 Flash estimation. The statistical estimate (p25/p50/p75) is pre-computed from community data and passed to Gemini as a grounding anchor, keeping AI output consistent with the data-driven range while allowing qualitative adjustments for scope, expertise, or market context
+- **Estimation engine:** IDF-weighted skill similarity, recency-adjusted daily rates, weighted percentile calculations (p25/p50/p75). The statistical range is the primary output — AI is an optional refinement layer on top.
+- **AI enhancement:** Optional Gemini 2.5 Flash layer. The statistical estimate (p25/p50/p75) is pre-computed from community data and passed to Gemini as a grounding anchor, keeping AI output consistent with the data-driven range while allowing qualitative adjustments for scope, expertise, or market context.
 - **Implied day rate:** When `days_of_work` is provided, displayed as a subtext on database cards, detail dialogs, and similar project results — computed as `your_budget / days_of_work`
 - **Rate representativeness:** Submitters flag whether a rate was standard / below market / above market. Below-market rates get 0.5× weight in the algorithm; above-market 0.85×. Submitters can optionally provide their standard rate, which always gets full weight (1.0×) and is used in place of `your_budget` for estimation.
 - **Freelancer vs studio split:** `contracted_as` field distinguishes who the client contracted with, enabling rate comparisons across commercial structures
-- **Currency normalization:** All budgets converted to USD at current exchange rates before percentile calculation — prevents magnitude differences (e.g. HUF vs USD) from distorting estimates. Same rates power the display currency selector in the header (frankfurter.app, cached 1hr)
-- **Searchable country and currency fields:** Full world country list (~110 countries) and currency list (~65 currencies with full names) with search-as-you-type comboboxes across all forms
+- **Currency selector:** Searchable combobox in the header. Live exchange rates via frankfurter.app, cached 1hr in localStorage. Default currency is inferred from the browser locale on first visit.
+- **Feature gates:** Three independent env-var flags — `VITE_DB_OPEN`, `VITE_SUBMISSIONS_OPEN`, `VITE_ESTIMATES_OPEN` — each default open. Set any to `false` to close that feature independently (e.g. collect submissions before opening the database).
 - **Anonymous submissions:** No account required — edit token stored in browser localStorage and optionally emailed
 - **Email edit link:** On submit, users can opt in to receive a one-time private edit link via Brevo. Email is deleted after sending and never stored.
 - **Newsletter:** Separate opt-in on submit, About page, homepage CTA, and footer — managed via Brevo contacts
 - **Privacy:** Project descriptions are processed by AI before storage — PII redacted, vulgar language removed, non-English text translated to English. Applied on submit and on every edit. GDPR-compliant right to erasure via `/unsubscribe`
 - **Admin panel:** Role-based access via `user_roles` table, bulk selection with type-to-confirm delete, inline editing, `updated_at` tracking. All writes go through the `admin-manage` edge function (service role) to bypass RLS correctly.
-- **Submission gate:** `SUBMISSIONS_OPEN` constant at the top of `src/pages/SubmitProject.tsx` — set to `false` for preview mode (form is explorable but submit button is disabled)
-- **Pre-prod mode:** `VITE_PRE_PROD=true` shows mock-data warnings across Database, Estimate, and hero sections
 - **Interactive background:** Canvas-based banana particles with mouse repulsion, constellation lines, and click ripples
 
 ---
@@ -249,13 +247,11 @@ The project uses two Supabase projects (staging and production) and Vercel's pre
 ```
 ┌─────────────────────┐       ┌──────────────────────────┐
 │  Feature branch      │──────▶│  Vercel preview deploy    │
-│  (any non-main)      │       │  VITE_PRE_PROD=true       │
-│                      │       │  → staging Supabase        │
+│  (any non-main)      │       │  → staging Supabase        │
 └─────────────────────┘       └──────────────────────────┘
 
 ┌─────────────────────┐       ┌──────────────────────────┐
 │  main branch         │──────▶│  Vercel production deploy │
-│                      │       │  VITE_PRE_PROD=false      │
 │                      │       │  → production Supabase     │
 └─────────────────────┘       └──────────────────────────┘
 ```
@@ -294,7 +290,9 @@ In the Vercel dashboard under **Settings > Environment Variables**, set each var
 | `VITE_SUPABASE_URL` | `https://<prod>.supabase.co` | `https://<staging>.supabase.co` |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | prod anon key | staging anon key |
 | `VITE_SUPABASE_PROJECT_ID` | prod project ref | staging project ref |
-| `VITE_PRE_PROD` | `false` | `true` |
+| `VITE_DB_OPEN` | _(omit — open by default)_ | `false` to hide staging data |
+| `VITE_SUBMISSIONS_OPEN` | _(omit — open by default)_ | `false` to block staging submissions |
+| `VITE_ESTIMATES_OPEN` | _(omit — open by default)_ | `false` to disable staging estimates |
 
 After this, every push to a non-main branch gets a Vercel preview deployment that talks to the staging database. Merges to `main` deploy to production with the production database.
 
@@ -337,9 +335,9 @@ npx supabase functions deploy --project-ref <staging-project-id>
 npx supabase functions deploy --project-ref ecflucezmmvzpereikik
 ```
 
-### What the staging banner shows
+### Feature gates on preview deployments
 
-When `VITE_PRE_PROD=true`, a yellow banner appears on the Database, Estimate, and hero sections showing the Supabase project ID. This makes it immediately obvious which backend you're connected to.
+Each feature can be toggled independently via env vars. Set any to `false` in the Vercel Preview scope to close that section on staging while leaving production unaffected. A yellow `PreProdBanner` is shown on the relevant page when a gate is closed, displaying the Supabase project ID so it's obvious which backend you're connected to.
 
 ---
 
