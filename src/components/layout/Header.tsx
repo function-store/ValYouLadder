@@ -1,10 +1,15 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import SearchableCombobox from "@/components/ui/searchable-combobox";
 import { Database, FileText, Calculator, Menu, X, Folder } from "lucide-react";
 import { useState } from "react";
 import { hasStoredSubmissions } from "@/lib/mySubmissions";
 import { useCurrency, SELECTABLE_CURRENCIES } from "@/contexts/CurrencyContext";
+import { CURRENCY_OPTIONS } from "@/lib/projectTypes";
+
+const DISPLAY_CURRENCY_OPTIONS = CURRENCY_OPTIONS.filter((c) =>
+  SELECTABLE_CURRENCIES.includes(c.value)
+);
 
 const Header = () => {
   const location = useLocation();
@@ -50,18 +55,14 @@ const Header = () => {
                 </Button>
               </Link>
             ))}
-            <Select value={displayCurrency} onValueChange={setDisplayCurrency}>
-              <SelectTrigger className="w-[72px] h-8 text-xs font-mono ml-2 border-border">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SELECTABLE_CURRENCIES.map((c) => (
-                  <SelectItem key={c} value={c} className="font-mono text-xs">
-                    {c}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableCombobox
+              options={DISPLAY_CURRENCY_OPTIONS}
+              value={displayCurrency}
+              onChange={setDisplayCurrency}
+              placeholder="Currency"
+              searchPlaceholder="Search currency..."
+              className="w-[200px] h-8 text-xs font-mono ml-2"
+            />
           </nav>
 
           {/* Mobile Menu Button */}
