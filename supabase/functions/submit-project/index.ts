@@ -8,7 +8,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const SENDER_EMAIL = "molnarda26@gmail.com";
+const SENDER_EMAIL = Deno.env.get("SENDER_EMAIL") ?? "noreply@valyouladder.com";
 const SENDER_NAME = "ValYouLadder";
 
 async function sendEditLinkEmail(brevoKey: string, to: string, editUrl: string) {
