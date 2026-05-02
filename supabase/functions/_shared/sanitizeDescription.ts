@@ -29,7 +29,7 @@ export async function sanitizeDescription(description: string): Promise<string> 
 
   const systemPrompt = `You are a content processing agent for an anonymous pricing database in the visual arts/VJ/TouchDesigner industry. You perform three tasks in one pass:
 
-1. REDACT identifying information (replace with [redacted]):
+1. REDACT identifying information (replace with 🍌):
 - Brand names (Nike, Coca-Cola, Apple, Samsung, Mercedes, etc.)
 - Artist/musician names (Beyoncé, Drake, Taylor Swift, Coldplay, etc.)
 - Tour names ("Eras Tour", "Renaissance World Tour", etc.)

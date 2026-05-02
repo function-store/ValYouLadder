@@ -20,9 +20,9 @@ const BASIC_PATTERNS = [
 function basicSanitize(description: string): string {
   let sanitized = description;
   BASIC_PATTERNS.forEach((pattern) => {
-    sanitized = sanitized.replace(pattern, "[redacted]");
+    sanitized = sanitized.replace(pattern, "🍌");
   });
-  sanitized = sanitized.replace(/(\[redacted\]\s*)+/g, "[redacted] ");
+  sanitized = sanitized.replace(/(\[redacted\]\s*)+/g, "🍌 ");
   return sanitized.trim().replace(/\s+/g, " ");
 }
 

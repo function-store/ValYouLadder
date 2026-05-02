@@ -191,12 +191,6 @@ const ProjectDetailDialog = ({ project, open, onOpenChange }: ProjectDetailDialo
               Budget Analysis
             </h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
-              <div className="p-3 rounded-lg bg-secondary/50 border border-border">
-                <div className="text-muted-foreground text-xs font-mono mb-1">Your % of Total</div>
-                <div className="font-mono font-bold">
-                  {((project.yourBudget / project.totalBudget) * 100).toFixed(1)}%
-                </div>
-              </div>
               {project.rateType && (
                 <div className="p-3 rounded-lg bg-secondary/50 border border-border">
                   <div className="text-muted-foreground text-xs font-mono mb-1">Rate Type</div>

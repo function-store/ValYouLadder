@@ -128,7 +128,7 @@ const SubmitProject = () => {
       expertiseLevel: "",
       yourRole: "",
       contractedAs: "",
-      rateType: "",
+      rateType: "project",
       rateRepresentativeness: "",
       standardRate: undefined,
       currency: "USD",
@@ -229,7 +229,7 @@ const SubmitProject = () => {
       expertiseLevel: "",
       yourRole: "",
       contractedAs: "",
-      rateType: "",
+      rateType: "project",
       rateRepresentativeness: "",
       standardRate: undefined,
       currency: "USD",
@@ -651,7 +651,7 @@ const SubmitProject = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="rateType">How Were You Paid? *</Label>
-                  <Select onValueChange={(v) => form.setValue("rateType", v)}>
+                  <Select defaultValue="project" onValueChange={(v) => form.setValue("rateType", v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select rate type" />
                     </SelectTrigger>
