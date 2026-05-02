@@ -249,7 +249,7 @@ const SimilarProjectsList = ({ projects, formatCurrency }: SimilarProjectsListPr
                     Description
                   </label>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    {selectedProject.description}
+                    {selectedProject.description.replace(/\[redacted\]/g, "🍌")}
                   </p>
                 </div>
               )}

@@ -293,7 +293,7 @@ const Database = () => {
 
                     {project.description && (
                       <p className="text-sm text-muted-foreground line-clamp-2">
-                        {sanitizeDescription(project.description)}
+                        {sanitizeDescription(project.description)?.replace(/\[redacted\]/g, "🍌")}
                       </p>
                     )}
 

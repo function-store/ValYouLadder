@@ -178,7 +178,7 @@ const ProjectDetailDialog = ({ project, open, onOpenChange }: ProjectDetailDialo
                   Additional Context
                 </h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  {project.description}
+                  {project.description.replace(/\[redacted\]/g, "🍌")}
                 </p>
               </div>
             </>
