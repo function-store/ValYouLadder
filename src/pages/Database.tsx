@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import PreProdBanner from "@/components/PreProdBanner";
 import SeedDataCallout from "@/components/SeedDataCallout";
+import { IS_PRE_PROD, IS_DB_OPEN } from "@/lib/config";
 
 const Database = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -32,6 +33,7 @@ const Database = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!IS_DB_OPEN) { setLoading(false); return; }
     const fetchProjects = async () => {
       setLoading(true);
       const allData: ProjectSubmission[] = [];
@@ -147,12 +149,25 @@ const Database = () => {
 
           <PreProdBanner message="All entries shown here are mock data. None of it represents real project submissions." />
 
-          <SeedDataCallout
+          {!IS_DB_OPEN && (
+            <div className="mt-12 text-center py-20 space-y-4">
+              <Construction className="h-10 w-10 text-muted-foreground mx-auto" />
+              <h2 className="text-xl font-semibold">Data collection in progress</h2>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                The database will open once we have enough submissions to protect early contributors' anonymity. Be the first to submit your project.
+              </p>
+              <Button asChild variant="default" className="mt-2">
+                <Link to="/submit">Submit a Project</Link>
+              </Button>
+            </div>
+          )}
+
+          {IS_DB_OPEN && <SeedDataCallout
             className="mb-6"
             message="Early days — the database is still small. The picture sharpens as more submissions arrive."
-          />
+          />}
 
-
+          {IS_DB_OPEN && (<>
           {/* Early-days banner — encourages submissions while the corpus is small */}
           {!loading && projects.length < 50 && (
             <div className="mb-8 rounded-xl border border-primary/30 bg-primary/5 p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -342,6 +357,7 @@ const Database = () => {
           )}
           </>
           )}
+          </>)}
         </div>
       </div>
     </Layout>

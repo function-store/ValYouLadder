@@ -56,9 +56,7 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-import { IS_PRE_PROD } from "@/lib/config";
-
-const SUBMISSIONS_OPEN = !IS_PRE_PROD;
+import { IS_SUBMISSIONS_OPEN as SUBMISSIONS_OPEN } from "@/lib/config";
 
 const DRAFT_STORAGE_KEY = "vyl_submit_draft_v1";
 const DRAFT_DEBOUNCE_MS = 600;
