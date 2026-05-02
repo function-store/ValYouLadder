@@ -2,8 +2,8 @@
 ALGORITHM.md
 README.md
 
-# Supabase (deployed separately)
-supabase/
+# Supabase edge functions and migrations (deployed separately via CLI)
+/supabase/
 
 # Local tooling and context
 context/
