@@ -347,6 +347,7 @@ const SubmitProject = () => {
           : "Thank you for contributing to the community.",
       });
       setIsSubmitted(true);
+      if (newsletterOptIn) localStorage.setItem("mailing-list-dismissed", "subscribed");
       setTimeout(triggerMailingListPopup, 2000);
     } catch (error) {
       console.error("Submission error:", error);
