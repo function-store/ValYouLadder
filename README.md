@@ -199,7 +199,7 @@ public/
 | `total_budget` | INTEGER | nullable — full production budget if known |
 | `days_of_work` | INTEGER | nullable — actual working days invested; used to compute implied day rate |
 | `year_completed` | INTEGER | |
-| `description` | TEXT | nullable — AI-sanitized of PII before storage |
+| `description` | TEXT | nullable — AI-processed before storage: PII redacted, vulgar language removed, translated to English |
 | `created_at` | TIMESTAMPTZ | |
 | `updated_at` | TIMESTAMPTZ | auto-updated via trigger |
 
@@ -215,11 +215,12 @@ See [ALGORITHM.md](./ALGORITHM.md) for a full breakdown of the similarity scorin
 - **Implied day rate:** When `days_of_work` is provided, displayed as a subtext on database cards, detail dialogs, and similar project results — computed as `your_budget / days_of_work`
 - **Rate representativeness:** Submitters flag whether a rate was standard / below market / above market. Below-market rates get 0.5× weight in the algorithm; above-market 0.85×. Submitters can optionally provide their standard rate, which always gets full weight (1.0×) and is used in place of `your_budget` for estimation.
 - **Freelancer vs studio split:** `contracted_as` field distinguishes who the client contracted with, enabling rate comparisons across commercial structures
-- **Currency selector:** Live exchange rates via frankfurter.app, cached 1hr in localStorage, displayed in header
+- **Currency normalization:** All budgets converted to USD at current exchange rates before percentile calculation — prevents magnitude differences (e.g. HUF vs USD) from distorting estimates. Same rates power the display currency selector in the header (frankfurter.app, cached 1hr)
+- **Searchable country and currency fields:** Full world country list (~110 countries) and currency list (~65 currencies with full names) with search-as-you-type comboboxes across all forms
 - **Anonymous submissions:** No account required — edit token stored in browser localStorage and optionally emailed
 - **Email edit link:** On submit, users can opt in to receive a one-time private edit link via Brevo. Email is deleted after sending and never stored.
 - **Newsletter:** Separate opt-in on submit, About page, homepage CTA, and footer — managed via Brevo contacts
-- **Privacy:** Automatic PII redaction on project descriptions via AI, GDPR-compliant right to erasure via `/unsubscribe`
+- **Privacy:** Project descriptions are processed by AI before storage — PII redacted, vulgar language removed, non-English text translated to English. Applied on submit and on every edit. GDPR-compliant right to erasure via `/unsubscribe`
 - **Admin panel:** Role-based access via `user_roles` table, bulk selection with type-to-confirm delete, inline editing, `updated_at` tracking. All writes go through the `admin-manage` edge function (service role) to bypass RLS correctly.
 - **Submission gate:** `SUBMISSIONS_OPEN` constant at the top of `src/pages/SubmitProject.tsx` — set to `false` for preview mode (form is explorable but submit button is disabled)
 - **Pre-prod mode:** `VITE_PRE_PROD=true` shows mock-data warnings across Database, Estimate, and hero sections

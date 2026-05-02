@@ -1,0 +1,23 @@
+# Documentation
+ALGORITHM.md
+README.md
+
+# Supabase (deployed separately)
+supabase/
+
+# Local tooling and context
+context/
+.claude/
+.modus/
+
+# Tests
+src/test/
+src/**/*.test.ts
+vitest.config.ts
+
+# Editor and IDE
+.vscode/
+.idea/
+
+# Lockfiles not used by Vercel
+bun.lockb
