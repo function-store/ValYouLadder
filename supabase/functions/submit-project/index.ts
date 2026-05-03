@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sanitizeDescription, SanitizationFailedError } from "../_shared/sanitizeDescription.ts";
+import { fingerprintFromRequest } from "../_shared/fingerprint.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -69,7 +70,7 @@ async function addBrevoContact(
   });
 }
 
-serve(async (req) => {
+serve(async (req, info) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -98,6 +99,11 @@ serve(async (req) => {
         );
       }
     }
+
+    const ipHash = await fingerprintFromRequest(
+      req,
+      info as unknown as { remoteAddr?: { hostname?: string } }
+    );
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -146,6 +152,7 @@ serve(async (req) => {
         days_of_work: body.daysOfWork ?? null,
         year_completed: body.yearCompleted,
         description: sanitizedDescription,
+        ip_hash: ipHash,
       })
       .select("id")
       .single();

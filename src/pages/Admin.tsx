@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,7 +19,9 @@ import {
   Trash2,
   Edit2,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Flag,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -64,6 +66,8 @@ interface ProjectSubmission {
   description: string | null;
   created_at: string;
   updated_at: string | null;
+  ip_hash: string | null;
+  flagged: boolean;
 }
 
 interface EstimateSubmission {
@@ -98,6 +102,7 @@ const Admin = () => {
   const [selectedEstimates, setSelectedEstimates] = useState<Set<string>>(new Set());
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ProjectSubmission | null>(null);
+  const [showFlaggedOnly, setShowFlaggedOnly] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -211,6 +216,35 @@ const Admin = () => {
     setEditDialogOpen(false);
     setEditTarget(null);
   };
+
+  const handleFlag = async (id: string, currentFlagged: boolean) => {
+    try {
+      const { error } = await supabase.functions.invoke("admin-manage", {
+        body: { action: "flag", table: "project_submissions", id, flagged: !currentFlagged },
+      });
+      if (error) throw error;
+      setSubmissions((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, flagged: !currentFlagged } : s))
+      );
+      toast.success(currentFlagged ? "Unflagged" : "Flagged as suspicious");
+    } catch (error) {
+      console.error("Error flagging:", error);
+      toast.error("Failed to update flag");
+    }
+  };
+
+  // Map from ip_hash → count of submissions sharing that hash
+  const ipClusterMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const s of submissions) {
+      if (s.ip_hash) map.set(s.ip_hash, (map.get(s.ip_hash) ?? 0) + 1);
+    }
+    return map;
+  }, [submissions]);
+
+  const displayedSubmissions = showFlaggedOnly
+    ? submissions.filter((s) => s.flagged)
+    : submissions;
 
   const toggleSubmission = (id: string) => {
     setSelectedSubmissions((prev) => {
@@ -353,7 +387,7 @@ const Admin = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
@@ -411,6 +445,23 @@ const Admin = () => {
               </div>
             </CardContent>
           </Card>
+          <Card
+            className={submissions.some((s) => s.flagged) ? "border-yellow-500/40" : ""}
+          >
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-full bg-yellow-500/10 flex items-center justify-center">
+                  <Flag className="h-4 w-4 text-yellow-500" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">
+                    {submissions.filter((s) => s.flagged).length}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Flagged</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Data Tables */}
@@ -428,30 +479,40 @@ const Admin = () => {
 
           <TabsContent value="submissions">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 flex-wrap gap-2">
                 <CardTitle>Project Submissions</CardTitle>
-                {selectedSubmissions.size > 0 && (
+                <div className="flex items-center gap-2">
                   <Button
-                    variant="destructive"
+                    variant={showFlaggedOnly ? "default" : "outline"}
                     size="sm"
-                    onClick={() => {
-                      setBulkDeleteType("submission");
-                      setBulkDeleteDialogOpen(true);
-                    }}
+                    onClick={() => setShowFlaggedOnly((v) => !v)}
                   >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete Selected ({selectedSubmissions.size})
+                    <Flag className="h-3.5 w-3.5 mr-1.5" />
+                    {showFlaggedOnly ? "Showing flagged" : "Show flagged only"}
                   </Button>
-                )}
+                  {selectedSubmissions.size > 0 && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        setBulkDeleteType("submission");
+                        setBulkDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Selected ({selectedSubmissions.size})
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 {loadingData ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin text-primary" />
                   </div>
-                ) : submissions.length === 0 ? (
+                ) : displayedSubmissions.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">
-                    No submissions yet
+                    {showFlaggedOnly ? "No flagged submissions" : "No submissions yet"}
                   </p>
                 ) : (
                   <div className="overflow-x-auto">
@@ -471,77 +532,116 @@ const Admin = () => {
                           <TableHead>Skills</TableHead>
                           <TableHead>Budget</TableHead>
                           <TableHead>Location</TableHead>
+                          <TableHead>Signals</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {submissions.map((sub) => (
-                          <TableRow key={sub.id} data-state={selectedSubmissions.has(sub.id) ? "selected" : undefined}>
-                            <TableCell>
-                              <Checkbox
-                                checked={selectedSubmissions.has(sub.id)}
-                                onCheckedChange={() => toggleSubmission(sub.id)}
-                              />
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap">
-                              {formatDate(sub.created_at)}
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap">
-                              {sub.updated_at ? (
-                                <span className="text-primary">{formatDate(sub.updated_at)}</span>
-                              ) : (
-                                <span className="text-muted-foreground/40">—</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{sub.client_type}</Badge>
-                            </TableCell>
-                            <TableCell>{sub.project_type}</TableCell>
-                            <TableCell>
-                              <div className="flex flex-wrap gap-1 max-w-48">
-                                {sub.skills.slice(0, 2).map((skill) => (
-                                  <Badge key={skill} variant="secondary" className="text-xs">
-                                    {skill}
-                                  </Badge>
-                                ))}
-                                {sub.skills.length > 2 && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    +{sub.skills.length - 2}
-                                  </Badge>
+                        {displayedSubmissions.map((sub) => {
+                          const clusterCount = sub.ip_hash ? (ipClusterMap.get(sub.ip_hash) ?? 1) : 0;
+                          return (
+                            <TableRow
+                              key={sub.id}
+                              data-state={selectedSubmissions.has(sub.id) ? "selected" : undefined}
+                              className={sub.flagged ? "bg-yellow-500/5" : undefined}
+                            >
+                              <TableCell>
+                                <Checkbox
+                                  checked={selectedSubmissions.has(sub.id)}
+                                  onCheckedChange={() => toggleSubmission(sub.id)}
+                                />
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap">
+                                {formatDate(sub.created_at)}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap">
+                                {sub.updated_at ? (
+                                  <span className="text-primary">{formatDate(sub.updated_at)}</span>
+                                ) : (
+                                  <span className="text-muted-foreground/40">—</span>
                                 )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="font-mono">
-                              {formatCurrency(sub.your_budget)}
-                            </TableCell>
-                            <TableCell>{sub.project_location}</TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    setEditTarget(sub);
-                                    setEditDialogOpen(true);
-                                  }}
-                                >
-                                  <Edit2 className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="text-destructive hover:text-destructive"
-                                  onClick={() => {
-                                    setDeleteTarget({ type: "submission", id: sub.id });
-                                    setDeleteDialogOpen(true);
-                                  }}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{sub.client_type}</Badge>
+                              </TableCell>
+                              <TableCell>{sub.project_type}</TableCell>
+                              <TableCell>
+                                <div className="flex flex-wrap gap-1 max-w-48">
+                                  {sub.skills.slice(0, 2).map((skill) => (
+                                    <Badge key={skill} variant="secondary" className="text-xs">
+                                      {skill}
+                                    </Badge>
+                                  ))}
+                                  {sub.skills.length > 2 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      +{sub.skills.length - 2}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="font-mono">
+                                {formatCurrency(sub.your_budget)}
+                              </TableCell>
+                              <TableCell>{sub.project_location}</TableCell>
+                              <TableCell>
+                                <div className="flex flex-col gap-1">
+                                  {clusterCount > 1 && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs border-orange-500/40 text-orange-500 gap-1 w-fit"
+                                    >
+                                      <Users className="h-3 w-3" />
+                                      {clusterCount} from same IP
+                                    </Badge>
+                                  )}
+                                  {sub.flagged && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs border-yellow-500/40 text-yellow-500 gap-1 w-fit"
+                                    >
+                                      <Flag className="h-3 w-3" />
+                                      Flagged
+                                    </Badge>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    title={sub.flagged ? "Unflag submission" : "Flag as suspicious"}
+                                    className={sub.flagged ? "text-yellow-500 hover:text-yellow-600" : "text-muted-foreground hover:text-yellow-500"}
+                                    onClick={() => handleFlag(sub.id, sub.flagged)}
+                                  >
+                                    <Flag className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      setEditTarget(sub);
+                                      setEditDialogOpen(true);
+                                    }}
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-destructive hover:text-destructive"
+                                    onClick={() => {
+                                      setDeleteTarget({ type: "submission", id: sub.id });
+                                      setDeleteDialogOpen(true);
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>

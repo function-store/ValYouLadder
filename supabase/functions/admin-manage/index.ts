@@ -68,7 +68,7 @@ serve(async (req) => {
       });
     }
 
-    const { action, table, id, ids, updates } = await req.json();
+    const { action, table, id, ids, updates, flagged } = await req.json();
 
     if (!ALLOWED_TABLES.includes(table)) {
       return new Response(JSON.stringify({ error: "Invalid table" }), {
@@ -136,8 +136,27 @@ serve(async (req) => {
       const { error } = await serviceClient.from(table).update(sanitized).eq("id", id);
       if (error) throw error;
 
+    } else if (action === "flag") {
+      if (!id || typeof flagged !== "boolean") {
+        return new Response(JSON.stringify({ error: "id and flagged (boolean) required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (table !== "project_submissions") {
+        return new Response(JSON.stringify({ error: "flag action only valid for project_submissions" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { error } = await serviceClient
+        .from("project_submissions")
+        .update({ flagged })
+        .eq("id", id);
+      if (error) throw error;
+
     } else {
-      return new Response(JSON.stringify({ error: "action must be delete, bulk-delete, or update" }), {
+      return new Response(JSON.stringify({ error: "action must be delete, bulk-delete, update, or flag" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
