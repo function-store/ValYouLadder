@@ -21,7 +21,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   PROJECT_TYPES,
   CLIENT_TYPES,
-  PROJECT_LENGTHS,
   EXPERTISE_LEVELS,
   SKILLS,
   COUNTRIES,
@@ -137,24 +136,19 @@ const AdminEditDialog = ({
             </div>
 
             <div className="space-y-2">
-              <Label>Project Duration</Label>
-              <Select
-                value={formData.project_length}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, project_length: value }))
+              <Label>Days of Work</Label>
+              <Input
+                type="number"
+                min={1}
+                placeholder="e.g. 15"
+                value={formData.days_of_work ?? ""}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    days_of_work: e.target.value === "" ? null : parseInt(e.target.value) || null,
+                  }))
                 }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROJECT_LENGTHS.map((length) => (
-                    <SelectItem key={length.value} value={length.value}>
-                      {length.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
             </div>
 
             <div className="space-y-2">

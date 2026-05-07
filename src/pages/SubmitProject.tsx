@@ -18,7 +18,6 @@ import { addStoredSubmission } from "@/lib/mySubmissions";
 import {
   PROJECT_TYPES,
   CLIENT_TYPES,
-  PROJECT_LENGTHS,
   EXPERTISE_LEVELS,
   SKILLS,
   COUNTRIES,
@@ -36,7 +35,6 @@ import PrivacyConsentCheckbox from "@/components/gdpr/PrivacyConsentCheckbox";
 const formSchema = z.object({
   projectType: z.string().min(1, "Project type is required"),
   clientType: z.string().min(1, "Client type is required"),
-  projectLength: z.string().min(1, "Project length is required"),
   clientCountry: z.string().optional(),
   projectLocation: z.string().min(1, "Project location is required"),
   skills: z.array(z.string()).min(1, "Select at least one skill"),
@@ -47,7 +45,7 @@ const formSchema = z.object({
   currency: z.string().min(1, "Currency is required"),
   totalBudget: z.number().min(0, "Total budget must be positive").optional(),
   yourBudget: z.number().min(0, "Your budget must be positive"),
-  daysOfWork: z.number().min(1).optional(),
+  daysOfWork: z.number().min(1, "Days of work is required"),
   rateRepresentativeness: z.string().min(1, "Required"),
   standardRate: z.number().min(0).optional(),
   yearCompleted: z.number().min(2000).max(new Date().getFullYear()),
@@ -120,7 +118,6 @@ const SubmitProject = () => {
     defaultValues: {
       projectType: "",
       clientType: "",
-      projectLength: "",
       clientCountry: "",
       projectLocation: "",
       skills: [],
@@ -223,7 +220,6 @@ const SubmitProject = () => {
     form.reset({
       projectType: "",
       clientType: "",
-      projectLength: "",
       clientCountry: "",
       projectLocation: "",
       skills: [],
@@ -311,7 +307,6 @@ const SubmitProject = () => {
           body: {
             projectType: sanitizedData.projectType,
             clientType: sanitizedData.clientType,
-            projectLength: sanitizedData.projectLength,
             clientCountry: sanitizedData.clientCountry || undefined,
             projectLocation: sanitizedData.projectLocation,
             skills: sanitizedData.skills,
@@ -489,25 +484,6 @@ const SubmitProject = () => {
                   </Select>
                   {form.formState.errors.clientType && (
                     <p className="text-sm text-destructive">{form.formState.errors.clientType.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="projectLength">Project Duration *</Label>
-                  <Select onValueChange={(v) => form.setValue("projectLength", v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select duration" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PROJECT_LENGTHS.map((length) => (
-                        <SelectItem key={length.value} value={length.value}>
-                          {length.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {form.formState.errors.projectLength && (
-                    <p className="text-sm text-destructive">{form.formState.errors.projectLength.message}</p>
                   )}
                 </div>
 
@@ -717,14 +693,17 @@ const SubmitProject = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="daysOfWork">Days of Work <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Label htmlFor="daysOfWork">Days of Work *</Label>
                   <Input
                     type="number"
                     min={1}
                     placeholder="e.g. 15"
-                    {...form.register("daysOfWork", { setValueAs: (v) => v === "" || v === undefined ? undefined : Number(v) })}
+                    {...form.register("daysOfWork", { valueAsNumber: true })}
                   />
                   <p className="text-xs text-muted-foreground">Total working days you personally put in</p>
+                  {form.formState.errors.daysOfWork && (
+                    <p className="text-sm text-destructive">{form.formState.errors.daysOfWork.message}</p>
+                  )}
                 </div>
               </div>
 

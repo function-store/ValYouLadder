@@ -17,6 +17,7 @@ import PreProdBanner from "@/components/PreProdBanner";
 import { IS_ESTIMATES_OPEN } from "@/lib/config";
 import {
   DURATION_DAYS,
+  daysToProjectLength,
   MIN_SIMILARITY_THRESHOLD,
   ANNUAL_INFLATION,
   computeSkillIdf,
@@ -143,7 +144,8 @@ const Estimate = () => {
     if (project.project_type === projectType) score += 20;
     if (project.client_type === clientType) score += 25;
     if (project.expertise_level === expertiseLevel) score += 15;
-    if (project.project_length === projectLength) score += 10;
+    const effectiveLength = project.project_length || daysToProjectLength(project.days_of_work);
+    if (effectiveLength && effectiveLength === projectLength) score += 10;
     if (project.your_role && yourRole && project.your_role === yourRole) score += 10;
 
     // Economic context: client_country is the primary rate signal (who's paying sets the budget ceiling),
@@ -281,7 +283,7 @@ const Estimate = () => {
    * Normalize budget to a daily effective rate so projects of different lengths are comparable.
    */
   const computeEffectiveRate = (project: DatabaseProject): number => {
-    const durationDays = DURATION_DAYS[project.project_length] || 15;
+    const durationDays = project.days_of_work || DURATION_DAYS[project.project_length] || 15;
     return resolvedBudget(project) / durationDays;
   };
 
@@ -335,7 +337,7 @@ const Estimate = () => {
           return null;
         }
 
-        const durationDays = DURATION_DAYS[p.projectLength] || 15;
+        const durationDays = p.daysOfWork || DURATION_DAYS[p.projectLength] || 15;
         const budgetUSD = p.budget / fromRate;
         const dailyRate = budgetUSD / durationDays;
 

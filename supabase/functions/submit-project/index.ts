@@ -86,9 +86,9 @@ serve(async (req, info) => {
     const body = await req.json();
 
     const required = [
-      "projectType", "clientType", "projectLength", "projectLocation",
+      "projectType", "clientType", "projectLocation",
       "skills", "expertiseLevel", "yourRole", "rateType", "currency",
-      "yourBudget", "yearCompleted",
+      "yourBudget", "daysOfWork", "yearCompleted",
     ];
 
     for (const field of required) {
@@ -136,7 +136,6 @@ serve(async (req, info) => {
       .insert({
         project_type: body.projectType,
         client_type: body.clientType,
-        project_length: body.projectLength,
         client_country: body.clientCountry || null,
         project_location: body.projectLocation,
         skills: body.skills,

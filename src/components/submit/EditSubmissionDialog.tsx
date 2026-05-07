@@ -21,7 +21,6 @@ import { toast } from "sonner";
 import {
   PROJECT_TYPES,
   CLIENT_TYPES,
-  PROJECT_LENGTHS,
   EXPERTISE_LEVELS,
   SKILLS,
   COUNTRIES,
@@ -37,7 +36,8 @@ export interface DBSubmission {
   id: string;
   project_type: string;
   client_type: string;
-  project_length: string;
+  project_length: string | null;
+  days_of_work: number | null;
   client_country: string | null;
   project_location: string;
   skills: string[];
@@ -66,7 +66,7 @@ const EditSubmissionDialog = ({ submission, token, onSaved, onClose }: Props) =>
   const [saving, setSaving] = useState(false);
   const [projectType, setProjectType] = useState(submission.project_type);
   const [clientType, setClientType] = useState(submission.client_type);
-  const [projectLength, setProjectLength] = useState(submission.project_length);
+  const [daysOfWork, setDaysOfWork] = useState(submission.days_of_work != null ? String(submission.days_of_work) : "");
   const [clientCountry, setClientCountry] = useState(submission.client_country ?? "");
   const [projectLocation, setProjectLocation] = useState(submission.project_location);
   const [skills, setSkills] = useState<string[]>(submission.skills ?? []);
@@ -103,7 +103,7 @@ const EditSubmissionDialog = ({ submission, token, onSaved, onClose }: Props) =>
           updates: {
             project_type: projectType,
             client_type: clientType,
-            project_length: projectLength,
+            days_of_work: daysOfWork !== "" ? Number(daysOfWork) : null,
             client_country: clientCountry || null,
             project_location: projectLocation,
             skills,
@@ -171,15 +171,14 @@ const EditSubmissionDialog = ({ submission, token, onSaved, onClose }: Props) =>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Project Duration</Label>
-              <Select value={projectLength} onValueChange={setProjectLength}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {PROJECT_LENGTHS.map((l) => (
-                    <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Days of Work</Label>
+              <Input
+                type="number"
+                min={1}
+                placeholder="e.g. 15"
+                value={daysOfWork}
+                onChange={(e) => setDaysOfWork(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label>Year Completed</Label>

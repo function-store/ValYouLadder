@@ -31,6 +31,17 @@ export const DURATION_DAYS: Record<string, number> = {
   "installation-perm": 60,
 };
 
+/** Derives a project_length bucket from a raw day count — used for backward-compat similarity scoring when a submission has days_of_work but no project_length */
+export const daysToProjectLength = (days: number | null | undefined): string | null => {
+  if (!days || days <= 0) return null;
+  if (days <= 1) return "day";
+  if (days <= 5) return "2-5-days";
+  if (days <= 14) return "1-2-weeks";
+  if (days <= 90) return "1-3-months";
+  if (days <= 180) return "3-6-months";
+  return "6plus-months";
+};
+
 /** Projects scoring below this are excluded — prevents irrelevant data from diluting estimates */
 export const MIN_SIMILARITY_THRESHOLD = 15;
 
