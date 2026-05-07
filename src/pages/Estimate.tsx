@@ -587,7 +587,7 @@ const Estimate = () => {
     <Layout>
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
-          {!IS_ESTIMATES_OPEN && <PreProdBanner message="Estimates are based on mock data only. Results do not reflect real market rates." />}
+          {!IS_ESTIMATES_OPEN && <PreProdBanner message="Data collection is in progress — estimates will be enabled once the database reaches a meaningful size." />}
 
           <div className="text-center mb-10">
             <h1 className="text-3xl md:text-4xl font-bold mb-4">
