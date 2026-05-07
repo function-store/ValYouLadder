@@ -45,7 +45,7 @@ const formSchema = z.object({
   currency: z.string().min(1, "Currency is required"),
   totalBudget: z.number().min(0, "Total budget must be positive").optional(),
   yourBudget: z.number().min(0, "Your budget must be positive"),
-  daysOfWork: z.number().min(1, "Days of work is required"),
+  daysOfWork: z.number().min(1).optional(),
   rateRepresentativeness: z.string().min(1, "Required"),
   standardRate: z.number().min(0).optional(),
   yearCompleted: z.number().min(2000).max(new Date().getFullYear()),
@@ -156,8 +156,14 @@ const SubmitProject = () => {
     rateType === "retainer" ? "e.g. 4000" :
     "e.g. 15000";
 
-  const daysLabel = rateType === "hourly" ? "Hours Worked *" : "Days of Work *";
-  const daysHint  = rateType === "hourly" ? "Total hours you worked on this project" : "Total working days you personally put in";
+  const daysLabel =
+    rateType === "hourly"   ? "Hours Worked *" :
+    rateType === "retainer" ? "Days per Month" :
+    "Days of Work *";
+  const daysHint =
+    rateType === "hourly"   ? "Total hours you worked on this project" :
+    rateType === "retainer" ? "Average days/month — helps compute an equivalent day rate" :
+    "Total working days you personally put in";
   const daysPlaceholder = rateType === "hourly" ? "e.g. 120" : "e.g. 15";
 
   // ───────────────────────────────────────────────────────────────────────
@@ -283,6 +289,11 @@ const SubmitProject = () => {
 
 
   const onSubmit = async (data: FormData) => {
+    if (data.rateType !== "retainer" && !data.daysOfWork) {
+      form.setError("daysOfWork", { message: data.rateType === "hourly" ? "Hours worked is required" : "Days of work is required" });
+      return;
+    }
+
     if (!isVerified || !privacyConsent) {
       toast({
         title: !isVerified ? "Verification required" : "Consent required",
@@ -731,7 +742,12 @@ const SubmitProject = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="daysOfWork">{daysLabel}</Label>
+                  <Label htmlFor="daysOfWork">
+                    {daysLabel}
+                    {rateType === "retainer" && (
+                      <span className="text-muted-foreground font-normal"> (optional)</span>
+                    )}
+                  </Label>
                   <Input
                     type="number"
                     min={1}
