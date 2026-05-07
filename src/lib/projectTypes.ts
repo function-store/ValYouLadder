@@ -139,6 +139,7 @@ export const EXPERTISE_LEVELS = [
 export const SKILLS = [
   "TouchDesigner",
   "Notch",
+  "TiXL",
   "Unreal Engine",
   "Unity",
   "VVVV",

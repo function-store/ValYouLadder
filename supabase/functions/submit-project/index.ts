@@ -220,8 +220,13 @@ serve(async (req, info) => {
     );
   } catch (error) {
     console.error("Error in submit-project:", error);
+    const message = error instanceof Error
+      ? error.message
+      : typeof error === "object" && error !== null
+      ? JSON.stringify(error)
+      : String(error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
