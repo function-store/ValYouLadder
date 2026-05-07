@@ -136,6 +136,29 @@ const SubmitProject = () => {
   });
 
   const rateRepresentativeness = form.watch("rateRepresentativeness");
+  const rateType = form.watch("rateType");
+
+  const budgetLabel =
+    rateType === "hourly" ? "Your Hourly Rate *" :
+    rateType === "daily"  ? "Your Day Rate *" :
+    rateType === "retainer" ? "Monthly Retainer *" :
+    "Total Project Fee *";
+
+  const budgetHint =
+    rateType === "hourly"  ? "Your rate per hour — we'll compute the total from hours worked" :
+    rateType === "daily"   ? "Your rate per day — we'll compute the total from days worked" :
+    rateType === "retainer" ? "Your monthly amount" :
+    "The total you personally received for this project";
+
+  const budgetPlaceholder =
+    rateType === "hourly" ? "e.g. 75" :
+    rateType === "daily"  ? "e.g. 500" :
+    rateType === "retainer" ? "e.g. 4000" :
+    "e.g. 15000";
+
+  const daysLabel = rateType === "hourly" ? "Hours Worked *" : "Days of Work *";
+  const daysHint  = rateType === "hourly" ? "Total hours you worked on this project" : "Total working days you personally put in";
+  const daysPlaceholder = rateType === "hourly" ? "e.g. 120" : "e.g. 15";
 
   // ───────────────────────────────────────────────────────────────────────
   // Draft persistence: restore on mount, debounced auto-save on changes,
@@ -298,8 +321,21 @@ const SubmitProject = () => {
         }
       }
 
+      // Normalize budget to total earned and days to working days,
+      // regardless of how the user entered their rate.
+      let totalBudget = data.yourBudget;
+      let workingDays = data.daysOfWork;
+      if (data.rateType === "daily" && data.daysOfWork) {
+        totalBudget = data.yourBudget * data.daysOfWork;
+      } else if (data.rateType === "hourly" && data.daysOfWork) {
+        totalBudget = data.yourBudget * data.daysOfWork;
+        workingDays = Math.max(1, Math.ceil(data.daysOfWork / 8));
+      }
+
       const sanitizedData = {
         ...data,
+        yourBudget: totalBudget,
+        daysOfWork: workingDays,
         description: sanitized,
       };
 
@@ -673,14 +709,14 @@ const SubmitProject = () => {
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="yourBudget">Your Fee / Budget *</Label>
+                  <Label htmlFor="yourBudget">{budgetLabel}</Label>
                   <Input
                     type="number"
                     min={0}
-                    placeholder="e.g. 15000"
+                    placeholder={budgetPlaceholder}
                     {...form.register("yourBudget", { valueAsNumber: true })}
                   />
-                  <p className="text-xs text-muted-foreground">What you personally received</p>
+                  <p className="text-xs text-muted-foreground">{budgetHint}</p>
                 </div>
 
                 <div className="space-y-2">
@@ -695,14 +731,14 @@ const SubmitProject = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="daysOfWork">Days of Work *</Label>
+                  <Label htmlFor="daysOfWork">{daysLabel}</Label>
                   <Input
                     type="number"
                     min={1}
-                    placeholder="e.g. 15"
+                    placeholder={daysPlaceholder}
                     {...form.register("daysOfWork", { valueAsNumber: true })}
                   />
-                  <p className="text-xs text-muted-foreground">Total working days you personally put in</p>
+                  <p className="text-xs text-muted-foreground">{daysHint}</p>
                   {form.formState.errors.daysOfWork && (
                     <p className="text-sm text-destructive">{form.formState.errors.daysOfWork.message}</p>
                   )}
