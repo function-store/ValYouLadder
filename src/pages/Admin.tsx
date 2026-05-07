@@ -43,6 +43,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import AdminEditDialog from "@/components/admin/AdminEditDialog";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface ProjectSubmission {
   id: string;
@@ -90,6 +91,7 @@ interface EstimateSubmission {
 const Admin = () => {
   const navigate = useNavigate();
   const { user, isLoading, isAdmin, signOut } = useAuth();
+  const { format: formatCurrency } = useCurrency();
   const [submissions, setSubmissions] = useState<ProjectSubmission[]>([]);
   const [estimates, setEstimates] = useState<EstimateSubmission[]>([]);
   const [loadingData, setLoadingData] = useState(true);
@@ -319,14 +321,6 @@ const Admin = () => {
     navigate("/");
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       month: "short",
@@ -438,7 +432,7 @@ const Admin = () => {
                           submissions.reduce((sum, s) => sum + s.your_budget, 0) /
                             submissions.length
                         )
-                      : "$0"}
+                      : "—"}
                   </p>
                   <p className="text-sm text-muted-foreground">Avg Budget</p>
                 </div>
@@ -580,7 +574,7 @@ const Admin = () => {
                                 </div>
                               </TableCell>
                               <TableCell className="font-mono">
-                                {formatCurrency(sub.your_budget)}
+                                {formatCurrency(sub.your_budget, sub.currency)}
                               </TableCell>
                               <TableCell>{sub.project_location}</TableCell>
                               <TableCell>
@@ -716,7 +710,7 @@ const Admin = () => {
                             <TableCell>{est.project_type}</TableCell>
                             <TableCell>{est.expertise_level}</TableCell>
                             <TableCell className="font-mono whitespace-nowrap">
-                              {formatCurrency(est.low_estimate)} - {formatCurrency(est.high_estimate)}
+                              {formatCurrency(est.low_estimate, "USD")} – {formatCurrency(est.high_estimate, "USD")}
                             </TableCell>
                             <TableCell>{est.sample_size}</TableCell>
                             <TableCell>
