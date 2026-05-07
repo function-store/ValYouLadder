@@ -106,6 +106,17 @@ export function sanitizeDescription(description: string | undefined): string | u
 }
 
 /**
+ * Collapses redundant whitespace without destroying intentional formatting.
+ * Runs of spaces/tabs → single space; 3+ consecutive newlines → two newlines; trims edges.
+ */
+export function normalizeWhitespace(value: string): string {
+  return value
+    .replace(/[^\S\n]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/**
  * Validates that a description doesn't contain obvious identifying info
  * Returns warnings for the user if potential issues found
  */

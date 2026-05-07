@@ -28,7 +28,7 @@ import {
   RATE_REPRESENTATIVENESS,
 } from "@/lib/projectTypes";
 import SearchableCombobox from "@/components/ui/searchable-combobox";
-import { validateDescription, sanitizeDescriptionWithAI, SanitizationUnavailableError } from "@/lib/sanitizeSubmission";
+import { validateDescription, sanitizeDescriptionWithAI, SanitizationUnavailableError, normalizeWhitespace } from "@/lib/sanitizeSubmission";
 import VerificationStep from "@/components/submit/VerificationStep";
 import PrivacyConsentCheckbox from "@/components/gdpr/PrivacyConsentCheckbox";
 
@@ -49,7 +49,7 @@ const formSchema = z.object({
   rateRepresentativeness: z.string().min(1, "Required"),
   standardRate: z.number().min(0).optional(),
   yearCompleted: z.number().min(2000).max(new Date().getFullYear()),
-  description: z.string().max(500).optional(),
+  description: z.string().refine(s => !s || s.replace(/\s/g, "").length <= 500, "Description exceeds 500 characters (excluding whitespace)").optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -258,6 +258,7 @@ const SubmitProject = () => {
     setDescriptionWarnings(warnings);
   };
 
+
   const onSubmit = async (data: FormData) => {
     if (!isVerified || !privacyConsent) {
       toast({
@@ -276,6 +277,7 @@ const SubmitProject = () => {
       let sanitized = "";
       let redactions: string[] = [];
       if (data.description && data.description.trim() !== "") {
+        data = { ...data, description: normalizeWhitespace(data.description) };
         try {
           const result = await sanitizeDescriptionWithAI(data.description);
           sanitized = result.sanitized;
@@ -757,16 +759,15 @@ const SubmitProject = () => {
               </div>
               <Textarea
                 placeholder="Scope, deliverables, unusual circumstances, what made this project unique..."
-                onChange={(e) => handleDescriptionChange(e.target.value.slice(0, 500))}
+                onChange={(e) => handleDescriptionChange(e.target.value)}
                 className="min-h-[100px]"
-                maxLength={500}
               />
               <div className="flex items-start justify-between gap-4">
                 <p className="text-xs text-muted-foreground">
                   The more context you add, the more useful your entry is to the community.
                 </p>
-                <p className={`text-xs shrink-0 ${(form.watch("description")?.length ?? 0) >= 450 ? "text-yellow-500" : "text-muted-foreground"}`}>
-                  {form.watch("description")?.length ?? 0} / 500
+                <p className={`text-xs shrink-0 ${(form.watch("description")?.replace(/\s/g, "").length ?? 0) >= 450 ? "text-yellow-500" : "text-muted-foreground"}`}>
+                  {form.watch("description")?.replace(/\s/g, "").length ?? 0} / 500
                 </p>
               </div>
               {descriptionWarnings.length > 0 && (

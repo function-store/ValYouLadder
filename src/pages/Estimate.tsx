@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import PrivacyConsentCheckbox from "@/components/gdpr/PrivacyConsentCheckbox";
 import { triggerMailingListPopup } from "@/components/MailingListPopup";
 import { useCurrency, fetchRates, FALLBACK_RATES, SELECTABLE_CURRENCIES } from "@/contexts/CurrencyContext";
+import { normalizeWhitespace } from "@/lib/sanitizeSubmission";
 import PreProdBanner from "@/components/PreProdBanner";
 import { IS_ESTIMATES_OPEN } from "@/lib/config";
 import {
@@ -444,7 +445,7 @@ const Estimate = () => {
                   projectLocation,
                   clientCountry,
                   skills: selectedSkills,
-                  description: description || undefined,
+                  description: description ? normalizeWhitespace(description) : undefined,
                 },
                 similarProjects,
                 statisticalEstimate: statResult
