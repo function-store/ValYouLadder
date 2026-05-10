@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Layout from "@/components/layout/Layout";
@@ -58,6 +58,16 @@ import { IS_SUBMISSIONS_OPEN as SUBMISSIONS_OPEN } from "@/lib/config";
 
 const DRAFT_STORAGE_KEY = "vyl_submit_draft_v1";
 const DRAFT_DEBOUNCE_MS = 600;
+
+const FIELD_ORDER: Array<keyof FormData> = [
+  "projectType", "clientType", "yearCompleted",
+  "projectLocation",
+  "skills", "expertiseLevel", "yourRole",
+  "contractedAs", "rateType", "currency",
+  "yourBudget", "daysOfWork",
+  "rateRepresentativeness", "standardRate",
+  "description",
+];
 
 interface DraftPayload {
   form: Partial<FormData>;
@@ -204,13 +214,16 @@ const SubmitProject = () => {
 
   // Debounced save
   const saveTimer = useRef<number | null>(null);
+  const submittedRef = useRef(false);
   const watchedValues = form.watch();
   useEffect(() => {
+    if (submittedRef.current) return;
     setIsDirty(true);
     if (saveTimer.current !== null) {
       window.clearTimeout(saveTimer.current);
     }
     saveTimer.current = window.setTimeout(() => {
+      if (submittedRef.current) return;
       writeDraft({
         form: watchedValues,
         selectedSkills,
@@ -273,6 +286,12 @@ const SubmitProject = () => {
     toast({ title: "Draft discarded" });
   }, [form, toast]);
 
+  const scrollToFirstError = useCallback((errors: FieldErrors<FormData>) => {
+    const firstKey = FIELD_ORDER.find((key) => key in errors);
+    if (!firstKey) return;
+    document.querySelector(`[data-field="${firstKey}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, []);
+
   const toggleSkill = (skill: string) => {
     const updated = selectedSkills.includes(skill)
       ? selectedSkills.filter((s) => s !== skill)
@@ -291,6 +310,7 @@ const SubmitProject = () => {
   const onSubmit = async (data: FormData) => {
     if (data.rateType !== "retainer" && !data.daysOfWork) {
       form.setError("daysOfWork", { message: data.rateType === "hourly" ? "Hours worked is required" : "Days of work is required" });
+      document.querySelector('[data-field="daysOfWork"]')?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
@@ -381,10 +401,14 @@ const SubmitProject = () => {
       if (fnError) throw fnError;
       addStoredSubmission(fnData.submissionId, fnData.token);
 
-      // Submission persisted — clear the draft but keep sticky preferences.
+      // Block auto-save BEFORE form.reset() triggers RHF re-renders.
+      submittedRef.current = true;
+
+      // Submission persisted — reset form to sticky-only state.
       const vals = form.getValues();
+      const sticky = { currency: vals.currency, projectLocation: vals.projectLocation, clientCountry: vals.clientCountry };
       writeDraft({
-        form: { currency: vals.currency, projectLocation: vals.projectLocation, clientCountry: vals.clientCountry },
+        form: sticky,
         selectedSkills: [],
         contactEmail,
         sendEditLink,
@@ -393,6 +417,26 @@ const SubmitProject = () => {
         preferencesOnly: true,
         savedAt: new Date().toISOString(),
       });
+      form.reset({
+        projectType: "",
+        clientType: "",
+        clientCountry: sticky.clientCountry,
+        projectLocation: sticky.projectLocation,
+        skills: [],
+        expertiseLevel: "",
+        yourRole: "",
+        contractedAs: "",
+        rateType: "project",
+        rateRepresentativeness: "",
+        standardRate: undefined,
+        currency: sticky.currency,
+        totalBudget: undefined,
+        yourBudget: 0,
+        yearCompleted: new Date().getFullYear(),
+        description: "",
+      });
+      setSelectedSkills([]);
+      setDescriptionWarnings([]);
       setIsDirty(false);
 
       toast({
@@ -492,13 +536,13 @@ const SubmitProject = () => {
             </div>
           )}
 
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <form onSubmit={form.handleSubmit(onSubmit, scrollToFirstError)} className="space-y-8">
             {/* Project Details */}
             <div className="node-card rounded-xl p-6 border border-border space-y-6">
               <h2 className="font-mono font-semibold text-lg border-b border-border pb-3">Project Details</h2>
 
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div className="space-y-2" data-field="projectType">
                   <Label htmlFor="projectType">Type of Project *</Label>
                   <Select onValueChange={(v) => form.setValue("projectType", v)}>
                     <SelectTrigger>
@@ -517,7 +561,7 @@ const SubmitProject = () => {
                   )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2" data-field="clientType">
                   <Label htmlFor="clientType">Type of Client *</Label>
                   <Select onValueChange={(v) => form.setValue("clientType", v)}>
                     <SelectTrigger>
@@ -536,7 +580,7 @@ const SubmitProject = () => {
                   )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2" data-field="yearCompleted">
                   <Label htmlFor="yearCompleted">Year Completed *</Label>
                   <Input
                     type="number"
@@ -553,7 +597,7 @@ const SubmitProject = () => {
               <h2 className="font-mono font-semibold text-lg border-b border-border pb-3">Location</h2>
 
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div className="space-y-2" data-field="projectLocation">
                   <Label htmlFor="projectLocation">Project Location *</Label>
                   <SearchableCombobox
                     options={COUNTRIES.map((c) => ({ value: c, label: c }))}
@@ -597,7 +641,7 @@ const SubmitProject = () => {
             <div className="node-card rounded-xl p-6 border border-border space-y-6">
               <h2 className="font-mono font-semibold text-lg border-b border-border pb-3">Skills & Expertise</h2>
 
-              <div className="space-y-4">
+              <div className="space-y-4" data-field="skills">
                 <Label>Skills Used *</Label>
                 <div className="flex flex-wrap gap-2">
                   {SKILLS.map((skill) => (
@@ -621,7 +665,7 @@ const SubmitProject = () => {
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div className="space-y-2" data-field="expertiseLevel">
                   <Label htmlFor="expertiseLevel">Your Expertise Level *</Label>
                   <Select onValueChange={(v) => form.setValue("expertiseLevel", v)}>
                     <SelectTrigger>
@@ -640,7 +684,7 @@ const SubmitProject = () => {
                   )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2" data-field="yourRole">
                   <Label htmlFor="yourRole">Your Role *</Label>
                   <Select onValueChange={(v) => form.setValue("yourRole", v)}>
                     <SelectTrigger>
@@ -666,7 +710,7 @@ const SubmitProject = () => {
               <h2 className="font-mono font-semibold text-lg border-b border-border pb-3">Budget</h2>
 
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div className="space-y-2" data-field="contractedAs">
                   <Label htmlFor="contractedAs">Contracted As *</Label>
                   <Select onValueChange={(v) => form.setValue("contractedAs", v)}>
                     <SelectTrigger>
@@ -685,7 +729,7 @@ const SubmitProject = () => {
                   )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2" data-field="rateType">
                   <Label htmlFor="rateType">How Were You Paid? *</Label>
                   <Select defaultValue="project" onValueChange={(v) => form.setValue("rateType", v)}>
                     <SelectTrigger>
@@ -706,7 +750,7 @@ const SubmitProject = () => {
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div className="space-y-2" data-field="currency">
                   <Label htmlFor="currency">Currency *</Label>
                   <SearchableCombobox
                     options={CURRENCY_OPTIONS.map((c) => ({ value: c.value, label: c.label }))}
@@ -719,7 +763,7 @@ const SubmitProject = () => {
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div className="space-y-2" data-field="yourBudget">
                   <Label htmlFor="yourBudget">{budgetLabel}</Label>
                   <Input
                     type="number"
@@ -741,7 +785,7 @@ const SubmitProject = () => {
                   <p className="text-xs text-muted-foreground">Optional — if you know the full project budget</p>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2" data-field="daysOfWork">
                   <Label htmlFor="daysOfWork">
                     {daysLabel}
                     {rateType === "retainer" && (
@@ -761,7 +805,7 @@ const SubmitProject = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2" data-field="rateRepresentativeness">
                 <Label>Does this rate reflect your standard pricing? *</Label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {RATE_REPRESENTATIVENESS.map((opt) => (
@@ -788,7 +832,7 @@ const SubmitProject = () => {
               </div>
 
               {(rateRepresentativeness === "below_market" || rateRepresentativeness === "above_market") && (
-                <div className="space-y-2">
+                <div className="space-y-2" data-field="standardRate">
                   <Label htmlFor="standardRate">
                     What would your standard rate have been? <span className="text-muted-foreground font-normal">(optional)</span>
                   </Label>
@@ -803,21 +847,26 @@ const SubmitProject = () => {
               )}
             </div>
 
-            {/* Additional Notes */}
-            <div className="node-card rounded-xl p-6 border border-border space-y-4">
+            {/* Description */}
+            <div className="node-card rounded-xl p-6 border border-border space-y-4" data-field="description">
               <div className="border-b border-border pb-3">
-                <h2 className="font-mono font-semibold text-lg">Additional Notes</h2>
-                <p className="text-xs text-muted-foreground mt-1">Write freely — AI will automatically strip any client names, brand names, venues, or other identifying details before saving.</p>
+                <h2 className="font-mono font-semibold text-lg">Describe the project</h2>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Descriptions make your entry significantly more useful for estimates — the AI uses them to match projects by context, not just category.
+                  Write freely: client names, venues, and brand references are <span className="text-foreground">automatically stripped</span> before anything is saved.
+                </p>
               </div>
               <Textarea
-                placeholder="Scope, deliverables, unusual circumstances, what made this project unique..."
+                placeholder="e.g. Two-day live AV show for a festival, tight turnaround, rigging constraints on site. Solo TD role, content provided by client, my standard rate."
                 onChange={(e) => handleDescriptionChange(e.target.value)}
-                className="min-h-[100px]"
+                className="min-h-[120px]"
               />
-              <div className="flex items-start justify-between gap-4">
-                <p className="text-xs text-muted-foreground">
-                  The more context you add, the more useful your entry is to the community.
-                </p>
+              <div className="flex items-center justify-between gap-4">
+                {(form.watch("description")?.replace(/\s/g, "").length ?? 0) >= 30 ? (
+                  <p className="text-xs text-primary font-mono">↑ Helps estimate matching</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Optional but valuable</p>
+                )}
                 <p className={`text-xs shrink-0 ${(form.watch("description")?.replace(/\s/g, "").length ?? 0) >= 450 ? "text-yellow-500" : "text-muted-foreground"}`}>
                   {form.watch("description")?.replace(/\s/g, "").length ?? 0} / 500
                 </p>

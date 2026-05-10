@@ -155,6 +155,7 @@ export const SKILLS = [
   "LED Mapping",
   "Projection Mapping",
   "LASER",
+  "Lighting Design",
   "Motion Graphics",
   "3D Modeling",
   "Shader Programming",
