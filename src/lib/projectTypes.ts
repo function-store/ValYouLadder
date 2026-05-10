@@ -5,6 +5,7 @@ export const PROJECT_TYPES = [
   { value: "consultation", label: "Consultation" },
   { value: "workshop", label: "Workshop / Teaching" },
   { value: "live-performance", label: "Live Performance / Show" },
+  { value: "club-venue", label: "Club / Live Venue" },
   { value: "tour", label: "Tour (Multiple Dates)" },
   { value: "installation-temp", label: "Temporary Installation" },
   { value: "installation-perm", label: "Permanent Installation" },
