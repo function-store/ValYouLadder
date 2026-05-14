@@ -4,6 +4,26 @@ Development guide for ValYouLadder. For an overview of the project, see [README.
 
 ---
 
+## Feature overview
+
+See [ALGORITHM.md](./ALGORITHM.md) for a full breakdown of the similarity scoring, rate normalization, representativeness weighting, ESS confidence, and AI grounding logic.
+
+- **Estimation engine:** IDF-weighted skill similarity, recency-adjusted daily rates, weighted percentile calculations (p25/p50/p75). The statistical range is the primary output — AI is an optional refinement layer on top.
+- **AI enhancement:** Optional Gemini 2.5 Flash layer. The statistical estimate (p25/p50/p75) is pre-computed from community data and passed to Gemini as a grounding anchor, keeping AI output consistent with the data-driven range while allowing qualitative adjustments for scope, expertise, or market context.
+- **Implied day rate:** When `days_of_work` is provided, displayed as a subtext on database cards, detail dialogs, and similar project results — computed as `your_budget / days_of_work`
+- **Rate representativeness:** Submitters flag whether a rate was standard / below market / above market. Below-market rates get 0.5× weight in the algorithm; above-market 0.85×. Submitters can optionally provide their standard rate, which always gets full weight (1.0×) and is used in place of `your_budget` for estimation.
+- **Freelancer vs studio split:** `contracted_as` field distinguishes who the client contracted with, enabling rate comparisons across commercial structures
+- **Currency selector:** Searchable combobox in the header. Live exchange rates via frankfurter.app, cached 1hr in localStorage. Default currency is inferred from the browser locale on first visit.
+- **Feature gates:** Three independent env-var flags — `VITE_DB_OPEN`, `VITE_SUBMISSIONS_OPEN`, `VITE_ESTIMATES_OPEN` — each default open. Set any to `false` to close that feature independently (e.g. collect submissions before opening the database).
+- **Anonymous submissions:** No account required — edit token stored in browser localStorage and optionally emailed
+- **Email edit link:** On submit, users can opt in to receive a one-time private edit link via Brevo. Email is deleted after sending and never stored.
+- **Newsletter:** Separate opt-in on submit, About page, homepage CTA, and footer — managed via Brevo contacts
+- **Privacy:** Project descriptions are processed by AI before storage — PII redacted, vulgar language removed, non-English text translated to English. Applied on submit and on every edit. GDPR-compliant right to erasure via `/unsubscribe`
+- **Admin panel:** Role-based access via `user_roles` table, bulk selection with type-to-confirm delete, inline editing, `updated_at` tracking. All writes go through the `admin-manage` edge function (service role) to bypass RLS correctly.
+- **Interactive background:** Canvas-based banana particles with mouse repulsion, constellation lines, and click ripples
+
+---
+
 ## Getting started
 
 ```sh

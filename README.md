@@ -22,9 +22,11 @@ ValYouLadder exists to fix that. Community-submitted project data powers a simil
 - **Estimation engine** — IDF-weighted skill similarity, recency-adjusted daily rates, weighted percentile calculations (p25/p50/p75). See [ALGORITHM.md](./ALGORITHM.md) for the full breakdown.
 - **AI enhancement** — optional Gemini 2.5 Flash layer. The statistical estimate is pre-computed and passed to Gemini as a grounding anchor, keeping AI output consistent with the data while allowing qualitative adjustments
 - **Rate representativeness** — submitters flag whether a rate was standard / below market / above market, with weighting applied in the algorithm
+- **Anonymous submissions** — no account required. Edit token stored in browser localStorage, with an optional one-time email edit link (email is deleted after sending, never stored)
 - **Currency support** — searchable selector with live exchange rates (frankfurter.app), default inferred from browser locale
-- **Privacy-first** — no accounts required. Descriptions are AI-processed before storage (PII redacted, vulgar language removed, non-English translated). GDPR-compliant right to erasure
-- **Feature gates** — three independent env-var flags to control what's live
+- **Privacy-first** — descriptions are AI-processed before storage (PII redacted, vulgar language removed, non-English translated). GDPR-compliant right to erasure
+- **Implied day rate** — when working days are provided, the implied daily rate is computed and shown across the platform
+- **Freelancer vs studio** — distinguishes who the client contracted with, enabling rate comparisons across commercial structures
 
 ---
 
