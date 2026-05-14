@@ -43,6 +43,13 @@ const About = () => {
                 about valuing expertise, respecting time, and building an industry where talented
                 professionals can thrive without racing to the bottom.
               </p>
+              <p>
+                ValYouLadder is{" "}
+                <a href="https://github.com/function-store/creative-cost-compass" target="_blank" rel="noopener noreferrer" className="text-primary font-medium hover:text-primary/80 transition-colors">open source</a>
+                {" "}— because a tool about transparency should itself be transparent. You can see
+                exactly how estimates are calculated, how your data is handled, and contribute
+                to making it better.
+              </p>
               <p className="text-sm border-l-2 border-primary/40 pl-4 italic">
                 <span className="text-foreground font-medium">Where we are today:</span> we're early.
                 The database is still small, and estimates will tighten as real projects accumulate —

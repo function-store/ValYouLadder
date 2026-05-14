@@ -1,9 +1,38 @@
 # ValYouLadder
 
-Rate benchmarking platform for creative professionals — TouchDesigner, Notch, projection mapping, LED installations, and live visuals. Community-submitted project data powers a similarity-weighted estimation engine, optionally enhanced by Gemini AI.
+Rate benchmarking platform for creative professionals — TouchDesigner, Notch, projection mapping, LED installations, and live visuals.
 
 Live: [valyouladder.com](https://valyouladder.com)  
-Built by [Function Store](https://functionstore.xyz/link-in-bio) · [Support on Patreon](https://patreon.com/function_store)
+Built by [Function Store](https://functionstore.xyz/link-in-bio) · [Support on Patreon](https://patreon.com/function_store)  
+License: [AGPL-3.0](LICENSE)
+
+---
+
+## Why
+
+Freelancers and contractors in creative tech have no shared language around rates. Clients set budgets based on what they've gotten away with before, and professionals price blind — leading to underpricing, burnout, and a race to the bottom.
+
+ValYouLadder exists to fix that. Community-submitted project data powers a similarity-weighted estimation engine, optionally enhanced by Gemini AI. The code is open source because a tool about transparency should itself be transparent.
+
+---
+
+## Features
+
+- **Community database** — anonymous, crowd-sourced project rate data from real creative-tech professionals
+- **Estimation engine** — IDF-weighted skill similarity, recency-adjusted daily rates, weighted percentile calculations (p25/p50/p75). See [ALGORITHM.md](./ALGORITHM.md) for the full breakdown.
+- **AI enhancement** — optional Gemini 2.5 Flash layer. The statistical estimate is pre-computed and passed to Gemini as a grounding anchor, keeping AI output consistent with the data while allowing qualitative adjustments
+- **Rate representativeness** — submitters flag whether a rate was standard / below market / above market, with weighting applied in the algorithm
+- **Currency support** — searchable selector with live exchange rates (frankfurter.app), default inferred from browser locale
+- **Privacy-first** — no accounts required. Descriptions are AI-processed before storage (PII redacted, vulgar language removed, non-English translated). GDPR-compliant right to erasure
+- **Feature gates** — three independent env-var flags (`VITE_DB_OPEN`, `VITE_SUBMISSIONS_OPEN`, `VITE_ESTIMATES_OPEN`) to control what's live
+
+---
+
+## Roadmap
+
+- **Database read** — after 50 submissions, open the database for public reading
+- **Estimates open** — after 50 submissions, fine-tuning of estimates can begin. When estimates open is determined by the perceived accuracy of the algorithm
+- **Estimate feedback loop** — after receiving an estimate, users can return once the project is won to report the actual rate. Closing the loop improves the algorithm and builds a ground-truth dataset over time
 
 ---
 
@@ -23,7 +52,9 @@ Built by [Function Store](https://functionstore.xyz/link-in-bio) · [Support on 
 
 ---
 
-## Getting started
+## Development
+
+### Getting started
 
 ```sh
 npm install
@@ -32,7 +63,7 @@ npm run dev
 
 Dev server starts at `http://localhost:5173`
 
-## Scripts
+### Scripts
 
 | Command | Description |
 |---------|-------------|
@@ -46,9 +77,7 @@ Dev server starts at `http://localhost:5173`
 | `npm test` | Run tests once (Vitest) |
 | `npm run test:watch` | Run tests in watch mode |
 
----
-
-## Environment variables
+### Environment variables
 
 Copy `.env.example` to `.env` and fill in your Supabase credentials:
 
@@ -69,33 +98,52 @@ VITE_SUPABASE_PROJECT_ID=your-project-ref
 
 `.env` and `.env.production` are gitignored. Never commit real keys. See [Staging / pre-production](#staging--pre-production) for the multi-environment setup.
 
+### Project structure
+
+```
+src/
+  pages/            Route pages
+                      Index, Database, Estimate, SubmitProject,
+                      MySubmissions, Admin, Auth, About, Privacy
+  components/
+    ui/             shadcn/ui primitives (Button, Dialog, Table, etc.)
+    layout/         Layout shell, Header (with currency selector), Footer
+    estimate/       Estimation form, results, similar projects list
+    database/       Project detail dialog
+    admin/          Admin edit dialog
+    submit/         Edit submission dialog, verification step
+    gdpr/           Privacy consent checkbox
+    home/           Landing page sections (Hero, Features, CTA, etc.)
+    BrandName       Renders "ValYouLadder" with the "You" accent — use everywhere the brand name appears
+    BananaParticles Canvas particle background (mouse repulsion, constellation lines, click ripples)
+    NewsletterSignup Inline newsletter signup (compact for footer, full for landing)
+    PreProdBanner   Yellow warning banner — rendered by callers when a feature gate is closed
+  contexts/
+    AuthContext     Supabase auth + admin role check
+    CurrencyContext Live exchange rates (frankfurter.app, 1hr cache), locale-inferred default, format()
+  hooks/            useMobile, useToast
+  integrations/
+    supabase/       Supabase client + auto-generated DB types
+  lib/
+    estimation      IDF-weighted similarity algorithm
+    projectTypes    Shared constants (project types, skills, countries, currencies, etc.)
+    mySubmissions   localStorage token store for anonymous submission management
+    sanitize        Client-side PII validation
+    config          Feature gates: IS_DB_OPEN, IS_SUBMISSIONS_OPEN, IS_ESTIMATES_OPEN, SUPABASE_PROJECT_ID
+supabase/
+  functions/        Deno edge functions
+  migrations/       SQL migration files
+public/
+  favicon.svg       ladder emoji SVG favicon
+```
+
 ---
 
 ## Supabase setup
 
 ### Database migrations
 
-Run migrations in order via the Supabase CLI (`npx supabase db push`) or the SQL Editor. Files are in `supabase/migrations/`:
-
-| Migration | Purpose |
-|-----------|---------|
-| `20260125…` | `project_submissions` table, RLS policies, indexes |
-| `20260128…` | `user_roles` table, `app_role` enum, `has_role()` RPC, `estimate_submissions` table, admin policies |
-| `20260130…` | Recreate policies as permissive |
-| `20260427…` | Replace `teamSize` with `yourRole`, `rateType`, `currency` fields |
-| `20260428…_make_total_budget_optional` | Make `total_budget` nullable |
-| `20260428…_mailing_list` | `mailing_list` table for newsletter subscriptions |
-| `20260428…_submission_tokens` | `submission_tokens` table for anonymous edit/delete access |
-| `20260429…_submission_updated_at` | `updated_at` column + trigger on `project_submissions` |
-
-The following columns were added directly (no migration file, dev mode):
-
-```sql
-ALTER TABLE public.project_submissions ADD COLUMN IF NOT EXISTS days_of_work INTEGER;
-ALTER TABLE public.project_submissions ADD COLUMN IF NOT EXISTS contracted_as TEXT;
-ALTER TABLE public.project_submissions ADD COLUMN IF NOT EXISTS rate_representativeness TEXT;
-ALTER TABLE public.project_submissions ADD COLUMN IF NOT EXISTS standard_rate INTEGER;
-```
+Run migrations in order via the Supabase CLI (`npx supabase db push`) or the SQL Editor. Files are in `supabase/migrations/`.
 
 ### Edge functions
 
@@ -137,47 +185,6 @@ npx supabase secrets set SITE_URL=https://valyouladder.com
 
 ---
 
-## Project structure
-
-```
-src/
-  pages/            Route pages
-                      Index, Database, Estimate, SubmitProject,
-                      MySubmissions, Admin, Auth, About, Privacy
-  components/
-    ui/             shadcn/ui primitives (Button, Dialog, Table, etc.)
-    layout/         Layout shell, Header (with currency selector), Footer
-    estimate/       Estimation form, results, similar projects list
-    database/       Project detail dialog
-    admin/          Admin edit dialog
-    submit/         Edit submission dialog, verification step
-    gdpr/           Privacy consent checkbox
-    home/           Landing page sections (Hero, Features, CTA, etc.)
-    BrandName       Renders "ValYouLadder" with the "You" accent — use everywhere the brand name appears
-    BananaParticles Canvas particle background (mouse repulsion, constellation lines, click ripples)
-    NewsletterSignup Inline newsletter signup (compact for footer, full for landing)
-    PreProdBanner   Yellow warning banner — rendered by callers when a feature gate is closed
-  contexts/
-    AuthContext     Supabase auth + admin role check
-    CurrencyContext Live exchange rates (frankfurter.app, 1hr cache), locale-inferred default, format()
-  hooks/            useMobile, useToast
-  integrations/
-    supabase/       Supabase client + auto-generated DB types
-  lib/
-    estimation      IDF-weighted similarity algorithm
-    projectTypes    Shared constants (project types, skills, countries, currencies, etc.)
-    mySubmissions   localStorage token store for anonymous submission management
-    sanitize        Client-side PII validation
-    config          Feature gates: IS_DB_OPEN, IS_SUBMISSIONS_OPEN, IS_ESTIMATES_OPEN, SUPABASE_PROJECT_ID
-supabase/
-  functions/        Deno edge functions
-  migrations/       SQL migration files
-public/
-  favicon.svg       🪜 ladder emoji SVG favicon
-```
-
----
-
 ## Data schema — `project_submissions`
 
 | Column | Type | Notes |
@@ -203,26 +210,6 @@ public/
 | `description` | TEXT | nullable — AI-processed before storage: PII redacted, vulgar language removed, translated to English |
 | `created_at` | TIMESTAMPTZ | |
 | `updated_at` | TIMESTAMPTZ | auto-updated via trigger |
-
----
-
-## Key features
-
-See [ALGORITHM.md](./ALGORITHM.md) for a full breakdown of the similarity scoring, rate normalization, representativeness weighting, ESS confidence, and AI grounding logic.
-
-- **Estimation engine:** IDF-weighted skill similarity, recency-adjusted daily rates, weighted percentile calculations (p25/p50/p75). The statistical range is the primary output — AI is an optional refinement layer on top.
-- **AI enhancement:** Optional Gemini 2.5 Flash layer. The statistical estimate (p25/p50/p75) is pre-computed from community data and passed to Gemini as a grounding anchor, keeping AI output consistent with the data-driven range while allowing qualitative adjustments for scope, expertise, or market context.
-- **Implied day rate:** When `days_of_work` is provided, displayed as a subtext on database cards, detail dialogs, and similar project results — computed as `your_budget / days_of_work`
-- **Rate representativeness:** Submitters flag whether a rate was standard / below market / above market. Below-market rates get 0.5× weight in the algorithm; above-market 0.85×. Submitters can optionally provide their standard rate, which always gets full weight (1.0×) and is used in place of `your_budget` for estimation.
-- **Freelancer vs studio split:** `contracted_as` field distinguishes who the client contracted with, enabling rate comparisons across commercial structures
-- **Currency selector:** Searchable combobox in the header. Live exchange rates via frankfurter.app, cached 1hr in localStorage. Default currency is inferred from the browser locale on first visit.
-- **Feature gates:** Three independent env-var flags — `VITE_DB_OPEN`, `VITE_SUBMISSIONS_OPEN`, `VITE_ESTIMATES_OPEN` — each default open. Set any to `false` to close that feature independently (e.g. collect submissions before opening the database).
-- **Anonymous submissions:** No account required — edit token stored in browser localStorage and optionally emailed
-- **Email edit link:** On submit, users can opt in to receive a one-time private edit link via Brevo. Email is deleted after sending and never stored.
-- **Newsletter:** Separate opt-in on submit, About page, homepage CTA, and footer — managed via Brevo contacts
-- **Privacy:** Project descriptions are processed by AI before storage — PII redacted, vulgar language removed, non-English text translated to English. Applied on submit and on every edit. GDPR-compliant right to erasure via `/unsubscribe`
-- **Admin panel:** Role-based access via `user_roles` table, bulk selection with type-to-confirm delete, inline editing, `updated_at` tracking. All writes go through the `admin-manage` edge function (service role) to bypass RLS correctly.
-- **Interactive background:** Canvas-based banana particles with mouse repulsion, constellation lines, and click ripples
 
 ---
 
@@ -278,7 +265,7 @@ The project uses two Supabase projects (staging and production) and Vercel's pre
    ```
 5. Re-link to production when done:
    ```sh
-   npx supabase link --project-ref ecflucezmmvzpereikik
+   npx supabase link --project-ref <production-project-ref>
    ```
 
 ### Configuring Vercel environment variables
@@ -320,7 +307,7 @@ npx supabase db push --project-ref <staging-project-id>
 # 2. Test on a preview deployment or locally via dev:staging
 
 # 3. Apply to production
-npx supabase db push --project-ref ecflucezmmvzpereikik
+npx supabase db push --project-ref <production-project-ref>
 ```
 
 If the migration adds or changes edge function behavior, deploy edge functions to both projects in the same order.
@@ -332,7 +319,7 @@ If the migration adds or changes edge function behavior, deploy edge functions t
 npx supabase functions deploy --project-ref <staging-project-id>
 
 # Production
-npx supabase functions deploy --project-ref ecflucezmmvzpereikik
+npx supabase functions deploy --project-ref <production-project-ref>
 ```
 
 ### Feature gates on preview deployments

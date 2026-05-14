@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Heart, Mail } from "lucide-react";
+import { Heart, Mail, Github } from "lucide-react";
 import NewsletterSignup from "@/components/NewsletterSignup";
 import BrandName from "@/components/BrandName";
 
@@ -42,6 +42,15 @@ const Footer = () => {
             >
               <Mail className="h-3.5 w-3.5" />
               Feedback
+            </a>
+            <a
+              href="https://github.com/function-store/ValYouLadder"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Github className="h-3.5 w-3.5" />
+              Open Source
             </a>
             <Link
               to="/privacy"
