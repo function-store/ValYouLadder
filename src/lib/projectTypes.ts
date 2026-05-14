@@ -17,6 +17,7 @@ export const CLIENT_TYPES = [
   { value: "institution", label: "Institution / Museum" },
   { value: "festival", label: "Festival" },
   { value: "club-venue", label: "Club / Live Venue" },
+  { value: "club-venue", label: "Theater" },
   { value: "musician", label: "Musician / Artist" },
   { value: "exhibition", label: "Exhibition" },
   { value: "agency", label: "Agency" },
